@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Seo } from "@/components/Seo";
@@ -7,6 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserRoles } from "@/hooks/useUserRoles";
+import { getPrimaryDashboardPath } from "@/lib/roleRouting";
 
 const authSchema = z.object({
   email: z.string().trim().email({ message: "Enter a valid email address" }).max(255),
@@ -26,8 +29,21 @@ export const AuthPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get("redirectTo");
 
-  const redirectTo = searchParams.get("redirectTo") || "/";
+  const { user } = useAuth();
+  const { roles, isLoading: rolesLoading } = useUserRoles();
+
+  useEffect(() => {
+    if (!user || rolesLoading) return;
+
+    const target =
+      redirectTo && redirectTo !== "/auth"
+        ? redirectTo
+        : getPrimaryDashboardPath(roles, "/");
+
+    navigate(target, { replace: true });
+  }, [user, rolesLoading, roles, redirectTo, navigate]);
 
   const handleChange = (field: keyof AuthFormValues, value: string) => {
     setValues((prev) => ({ ...prev, [field]: value }));
@@ -68,7 +84,7 @@ export const AuthPage = () => {
           title: "Welcome back",
           description: "You are now signed in.",
         });
-        navigate(redirectTo);
+        // Redirect is handled by the auth state effect above
       } else {
         const redirectUrl = `${window.location.origin}/`;
         const { error } = await supabase.auth.signUp({
