@@ -315,33 +315,39 @@ export type Database = {
       }
       students: {
         Row: {
+          age: number | null
           batch: string | null
           class_level: string | null
           created_at: string
           date_of_birth: string | null
           full_name: string
+          gender: string | null
           id: string
           school_id: string | null
           updated_at: string
           user_id: string | null
         }
         Insert: {
+          age?: number | null
           batch?: string | null
           class_level?: string | null
           created_at?: string
           date_of_birth?: string | null
           full_name: string
+          gender?: string | null
           id?: string
           school_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
         Update: {
+          age?: number | null
           batch?: string | null
           class_level?: string | null
           created_at?: string
           date_of_birth?: string | null
           full_name?: string
+          gender?: string | null
           id?: string
           school_id?: string | null
           updated_at?: string

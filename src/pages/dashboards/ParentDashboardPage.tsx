@@ -31,22 +31,19 @@ const childSetupSchema = z.object({
   class_level: z
     .string()
     .trim()
-    .max(120, { message: "Class must be under 120 characters" })
-    .optional()
-    .or(z.literal("")),
-  batch: z
-    .string()
-    .trim()
-    .max(120, { message: "Batch must be under 120 characters" })
-    .optional()
-    .or(z.literal("")),
-  date_of_birth: z
-    .string()
-    .trim()
-    .max(10, { message: "Use format YYYY-MM-DD" })
-    .optional()
-    .or(z.literal("")),
+    .min(1, { message: "Class level is required" })
+    .max(120, { message: "Class must be under 120 characters" }),
+  age: z
+    .coerce.number({ invalid_type_error: "Age must be a number" })
+    .int({ message: "Age must be a whole number" })
+    .min(5, { message: "Age must be at least 5" })
+    .max(25, { message: "Age must be 25 or younger" }),
+  gender: z.enum(["male", "female", "other"], {
+    required_error: "Select a gender",
+    invalid_type_error: "Select a gender",
+  }),
 });
+
 
 const fetchParentDashboard = async (userId: string): Promise<DashboardData> => {
   // 1) Parent profile
@@ -123,6 +120,19 @@ const fetchParentDashboard = async (userId: string): Promise<DashboardData> => {
 
 export const ParentDashboardPage = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const [creatingChild, setCreatingChild] = useState(false);
+  const [childValues, setChildValues] = useState<z.infer<typeof childSetupSchema>>({
+    full_name: "",
+    class_level: "",
+    age: 10,
+    gender: "male",
+  });
+  const [childErrors, setChildErrors] = useState<
+    Partial<Record<keyof z.infer<typeof childSetupSchema>, string>>
+  >({});
 
   const {
     data,
@@ -137,6 +147,119 @@ export const ParentDashboardPage = () => {
 
   const parent = data?.parent ?? null;
   const students = data?.students ?? [];
+
+  const handleChildChange = (
+    field: keyof z.infer<typeof childSetupSchema>,
+    value: unknown,
+  ) => {
+    setChildValues((prev) => ({ ...prev, [field]: value } as any));
+    setChildErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+
+  const handleCreateChild = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    const parsed = childSetupSchema.safeParse(childValues);
+    if (!parsed.success) {
+      const fieldErrors: Partial<Record<keyof z.infer<typeof childSetupSchema>, string>> = {};
+      parsed.error.issues.forEach((issue) => {
+        const field = issue.path[0] as keyof z.infer<typeof childSetupSchema>;
+        if (!fieldErrors[field]) fieldErrors[field] = issue.message;
+      });
+      setChildErrors(fieldErrors);
+      return;
+    }
+
+    setCreatingChild(true);
+    try {
+      // Ensure parent profile exists
+      let currentParent = parent;
+      if (!currentParent) {
+        const { data: createdParent, error: parentInsertError } = await supabase
+          .from("parents")
+          .insert({
+            user_id: user.id,
+            full_name: user.email ?? "Parent",
+          })
+          .select("*")
+          .maybeSingle();
+
+        if (parentInsertError) {
+          toast({
+            title: "Could not create parent profile",
+            description: parentInsertError.message,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        currentParent = createdParent ?? null;
+      }
+
+      if (!currentParent) {
+        toast({
+          title: "Parent profile missing",
+          description: "We couldn\'t link this child to your account.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const clean = parsed.data;
+
+      const { data: createdStudent, error: studentError } = await supabase
+        .from("students")
+        .insert({
+          full_name: clean.full_name,
+          class_level: clean.class_level,
+          age: clean.age,
+          gender: clean.gender,
+          school_id: null,
+        })
+        .select("id")
+        .maybeSingle();
+
+      if (studentError || !createdStudent) {
+        toast({
+          title: "Could not create student",
+          description: studentError?.message ?? "Student could not be created.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error: linkError } = await supabase.from("parent_students").insert({
+        parent_id: currentParent.id,
+        student_id: createdStudent.id,
+      });
+
+      if (linkError) {
+        toast({
+          title: "Could not link child",
+          description: linkError.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Child added",
+        description: "We\'ve linked this child to your parent dashboard.",
+      });
+
+      setChildValues({
+        full_name: "",
+        class_level: "",
+        age: 10,
+        gender: "male",
+      });
+      setChildErrors({});
+      await queryClient.invalidateQueries({ queryKey: ["parent-dashboard", user.id] });
+    } finally {
+      setCreatingChild(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -179,15 +302,84 @@ export const ParentDashboardPage = () => {
         )}
 
         {!isLoading && !isError && parent && students.length === 0 && (
-          <div className="rounded-3xl border border-dashed border-border/70 bg-muted/40 p-6 text-sm text-muted-foreground">
+          <section className="rounded-3xl border border-dashed border-border/70 bg-muted/40 p-6 text-sm text-muted-foreground">
             <p className="font-medium text-foreground">No linked students yet</p>
             <p className="mt-1 max-w-xl">
               We can&apos;t find any student profiles connected to this parent account yet.
             </p>
             <p className="mt-3 text-xs text-muted-foreground">
-              If your child is not part of a partner school, you can set up their profile yourself.
+              If your child is not part of a partner school, you can set up their profile here so you can track their
+              projects and assignments.
             </p>
-          </div>
+
+            <form onSubmit={handleCreateChild} className="mt-4 grid gap-3 md:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="child-full-name">Child&apos;s full name</Label>
+                <Input
+                  id="child-full-name"
+                  value={childValues.full_name}
+                  onChange={(e) => handleChildChange("full_name", e.target.value)}
+                  disabled={creatingChild}
+                  placeholder="e.g. Ada Lovelace"
+                />
+                {childErrors.full_name && (
+                  <p className="text-[11px] text-destructive">{childErrors.full_name}</p>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="child-class-level">Class level</Label>
+                <Input
+                  id="child-class-level"
+                  value={childValues.class_level}
+                  onChange={(e) => handleChildChange("class_level", e.target.value)}
+                  disabled={creatingChild}
+                  placeholder="e.g. JSS 2" 
+                />
+                {childErrors.class_level && (
+                  <p className="text-[11px] text-destructive">{childErrors.class_level}</p>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="child-age">Age</Label>
+                <Input
+                  id="child-age"
+                  type="number"
+                  min={5}
+                  max={25}
+                  value={childValues.age}
+                  onChange={(e) => handleChildChange("age", e.target.value)}
+                  disabled={creatingChild}
+                />
+                {childErrors.age && <p className="text-[11px] text-destructive">{childErrors.age}</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="child-gender">Gender</Label>
+                <select
+                  id="child-gender"
+                  className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  value={childValues.gender}
+                  onChange={(e) => handleChildChange("gender", e.target.value)}
+                  disabled={creatingChild}
+                >
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Prefer not to say / Other</option>
+                </select>
+                {childErrors.gender && (
+                  <p className="text-[11px] text-destructive">{childErrors.gender}</p>
+                )}
+              </div>
+
+              <div className="md:col-span-2 mt-2 flex justify-end">
+                <Button type="submit" size="sm" disabled={creatingChild}>
+                  {creatingChild ? "Saving child..." : "Save child profile"}
+                </Button>
+              </div>
+            </form>
+          </section>
         )}
 
         {!isLoading && !isError && parent && students.length > 0 && (
