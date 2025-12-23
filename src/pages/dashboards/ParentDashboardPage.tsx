@@ -1,9 +1,14 @@
 import { Seo } from "@/components/Seo";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { z } from "zod";
 
 type ParentRow = Tables<"parents">;
 type StudentRow = Tables<"students">;
@@ -16,6 +21,32 @@ type DashboardData = {
   projectsByStudent: Record<string, ProjectRow[]>;
   assignmentsByStudent: Record<string, AssignmentRow[]>;
 };
+
+const childSetupSchema = z.object({
+  full_name: z
+    .string()
+    .trim()
+    .min(3, { message: "Name must be at least 3 characters" })
+    .max(120, { message: "Name must be under 120 characters" }),
+  class_level: z
+    .string()
+    .trim()
+    .max(120, { message: "Class must be under 120 characters" })
+    .optional()
+    .or(z.literal("")),
+  batch: z
+    .string()
+    .trim()
+    .max(120, { message: "Batch must be under 120 characters" })
+    .optional()
+    .or(z.literal("")),
+  date_of_birth: z
+    .string()
+    .trim()
+    .max(10, { message: "Use format YYYY-MM-DD" })
+    .optional()
+    .or(z.literal("")),
+});
 
 const fetchParentDashboard = async (userId: string): Promise<DashboardData> => {
   // 1) Parent profile
@@ -151,8 +182,10 @@ export const ParentDashboardPage = () => {
           <div className="rounded-3xl border border-dashed border-border/70 bg-muted/40 p-6 text-sm text-muted-foreground">
             <p className="font-medium text-foreground">No linked students yet</p>
             <p className="mt-1 max-w-xl">
-              We can&apos;t find any student profiles connected to this parent account. Please contact the program admin or your
-              child&apos;s school to confirm registration.
+              We can&apos;t find any student profiles connected to this parent account yet.
+            </p>
+            <p className="mt-3 text-xs text-muted-foreground">
+              If your child is not part of a partner school, you can set up their profile yourself.
             </p>
           </div>
         )}
