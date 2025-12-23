@@ -96,7 +96,7 @@ export const AuthPage = () => {
 
         const signedInUser = data.user;
 
-        // After first successful login, ensure the chosen non-admin role exists
+        // After successful login, ensure the chosen non-admin role exists
         if (signedInUser && selectedRole) {
           const { data: existingRoles, error: fetchError } = await supabase
             .from("user_roles")
@@ -127,7 +127,20 @@ export const AuthPage = () => {
           title: "Welcome back",
           description: "You are now signed in.",
         });
-        // Redirect is handled by the auth state + roles effect above once roles are present
+
+        // Immediately send the user to the dashboard for the role they chose
+        const explicitTarget =
+          redirectTo && redirectTo !== "/auth"
+            ? redirectTo
+            : selectedRole === "student"
+              ? "/student"
+              : selectedRole === "parent"
+                ? "/parent"
+                : selectedRole === "school"
+                  ? "/school"
+                  : "/";
+
+        navigate(explicitTarget, { replace: true });
       } else {
         const redirectUrl = `${window.location.origin}/`;
         const { error } = await supabase.auth.signUp({
