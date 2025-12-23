@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 type ProjectRow = Tables<"projects">;
 
@@ -24,6 +24,7 @@ const fetchPublicProjects = async (): Promise<ProjectRow[]> => {
 };
 
 export const PublicGalleryPage = () => {
+  const navigate = useNavigate();
   const {
     data: projects,
     isLoading,
@@ -44,7 +45,7 @@ export const PublicGalleryPage = () => {
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => window.history.back()}
+            onClick={() => navigate("/")}
             className="text-xs"
           >
             ← Back
