@@ -39,6 +39,17 @@ export const PublicGalleryPage = () => {
         canonical={`${window.location.origin}/projects`}
       />
       <main className="container pb-16 pt-10">
+        <div className="mb-4">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => window.history.back()}
+            className="text-xs"
+          >
+            ← Back
+          </Button>
+        </div>
         <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent-foreground/70">

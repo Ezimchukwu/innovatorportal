@@ -24,7 +24,7 @@ type AuthFormValues = z.infer<typeof authSchema>;
 type SelectableRole = Extract<AppRole, "student" | "parent" | "school">;
 
 export const AuthPage = () => {
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [mode, setMode] = useState<"login" | "signup" | "forgot">("login");
   const [values, setValues] = useState<AuthFormValues>({ email: "", password: "" });
   const [errors, setErrors] = useState<Partial<Record<keyof AuthFormValues, string>>>({});
   const [loading, setLoading] = useState(false);
@@ -33,12 +33,14 @@ export const AuthPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirectTo");
+  const isResetFlow = searchParams.get("reset") === "1";
 
   const { user } = useAuth();
   const { roles, isLoading: rolesLoading } = useUserRoles();
 
   // When a logged-in user already has a role, redirect them away from /auth
   useEffect(() => {
+    if (isResetFlow) return; // stay on this page for password reset
     if (!user || rolesLoading) return;
     if (!roles || roles.length === 0) return;
 
@@ -48,7 +50,7 @@ export const AuthPage = () => {
         : getPrimaryDashboardPath(roles, "/");
 
     navigate(target, { replace: true });
-  }, [user, rolesLoading, roles, redirectTo, navigate]);
+  }, [user, rolesLoading, roles, redirectTo, navigate, isResetFlow]);
 
   const handleChange = (field: keyof AuthFormValues, value: string) => {
     setValues((prev) => ({ ...prev, [field]: value }));
@@ -57,6 +59,40 @@ export const AuthPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (mode === "forgot") {
+      const emailResult = authSchema.shape.email.safeParse(values.email);
+      if (!emailResult.success) {
+        setErrors((prev) => ({ ...prev, email: emailResult.error.issues[0]?.message ?? "Enter a valid email" }));
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const redirectUrl = `${window.location.origin}/auth?reset=1`;
+        const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
+          redirectTo: redirectUrl,
+        });
+
+        if (error) {
+          toast({
+            title: "Password reset failed",
+            description: error.message,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        toast({
+          title: "Check your email",
+          description: "We sent you a secure link to reset your password.",
+        });
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     const parsed = authSchema.safeParse(values);
     if (!parsed.success) {
       const fieldErrors: Partial<Record<keyof AuthFormValues, string>> = {};
@@ -170,7 +206,7 @@ export const AuthPage = () => {
     }
   };
 
-  const title = mode === "login" ? "Sign in" : "Create an account";
+  const title = mode === "login" ? "Sign in" : mode === "signup" ? "Create an account" : "Forgot password";
 
   const renderRolePicker = () => {
     if (mode !== "login") return null;
@@ -232,15 +268,25 @@ export const AuthPage = () => {
       />
       <main className="container flex min-h-screen items-center justify-center py-8">
         <div className="grid w-full max-w-md gap-6 rounded-3xl border border-border/70 bg-card/90 p-6 shadow-[var(--shadow-soft)]">
-          <div className="space-y-1 text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-accent-foreground/80">
-              AI Innovators Portal
-            </p>
-            <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-            <p className="text-xs text-muted-foreground">
-              Use a single account to access student, parent or school dashboards after approval.
-            </p>
+          <div className="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="text-[11px] font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            >
+              ← Back
+            </button>
+            <div className="text-right">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-accent-foreground/80">
+                AI Innovators Portal
+              </p>
+              <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
+            </div>
           </div>
+
+          <p className="text-xs text-muted-foreground">
+            Use a single account to access student, parent or school dashboards after approval.
+          </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
@@ -252,6 +298,7 @@ export const AuthPage = () => {
                 value={values.email}
                 onChange={(e) => handleChange("email", e.target.value)}
                 required
+                disabled={loading}
               />
               {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
             </div>
@@ -264,35 +311,80 @@ export const AuthPage = () => {
                 autoComplete={mode === "login" ? "current-password" : "new-password"}
                 value={values.password}
                 onChange={(e) => handleChange("password", e.target.value)}
-                required
+                required={mode !== "forgot"}
+                disabled={mode === "forgot"}
               />
               {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
+              {mode === "login" && (
+                <button
+                  type="button"
+                  onClick={() => setMode("forgot")}
+                  className="mt-1 text-[11px] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                >
+                  Forgot password?
+                </button>
+              )}
             </div>
 
-            {renderRolePicker()}
+            {mode === "login" && renderRolePicker()}
 
-            <Button type="submit" className="w-full" variant="hero" disabled={loading}>
-              {loading ? "Please wait..." : mode === "login" ? "Sign in" : "Create account"}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading
+                ? mode === "forgot"
+                  ? "Sending reset link..."
+                  : mode === "login"
+                    ? "Signing in..."
+                    : "Creating account..."
+                : mode === "forgot"
+                  ? "Send reset link"
+                  : mode === "login"
+                    ? "Sign in"
+                    : "Create account"}
             </Button>
           </form>
 
           <div className="flex flex-col gap-2 text-center text-xs text-muted-foreground">
-            {mode === "login" ? (
-              <button
-                type="button"
-                onClick={() => setMode("signup")}
-                className="text-primary underline-offset-4 hover:underline"
-              >
-                New here? Create an account instead
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setMode("login")}
-                className="text-primary underline-offset-4 hover:underline"
-              >
-                Already registered? Sign in instead
-              </button>
+            {mode === "login" && (
+              <>
+                <span>
+                  Don&apos;t have an account?{" "}
+                  <button
+                    type="button"
+                    onClick={() => setMode("signup")}
+                    className="font-medium text-primary underline-offset-4 hover:underline"
+                  >
+                    Create one
+                  </button>
+                </span>
+              </>
+            )}
+            {mode === "signup" && (
+              <>
+                <span>
+                  Already registered?{" "}
+                  <button
+                    type="button"
+                    onClick={() => setMode("login")}
+                    className="font-medium text-primary underline-offset-4 hover:underline"
+                  >
+                    Sign in
+                  </button>
+                </span>
+              </>
+            )}
+            {mode === "forgot" && (
+              <>
+                <span>
+                  Remembered your password?{" "}
+                  <button
+                    type="button"
+                    onClick={() => setMode("login")}
+                    className="font-medium text-primary underline-offset-4 hover:underline"
+                  >
+                    Back to sign in
+                  </button>
+                </span>
+              </>
             )}
             <p>
               Public projects remain visible without login. Private dashboards will only unlock once your role and payment are
