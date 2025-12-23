@@ -17,7 +17,7 @@ export const AdminDashboardPage = () => {
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/")}
             className="text-xs"
           >
             ← Back
