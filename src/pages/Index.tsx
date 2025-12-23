@@ -1,8 +1,21 @@
 import { Seo } from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserRoles } from "@/hooks/useUserRoles";
+import { getPrimaryDashboardPath } from "@/lib/roleRouting";
 
 const Index = () => {
+  const { user } = useAuth();
+  const { roles } = useUserRoles();
+  const primaryDashboardPath = getPrimaryDashboardPath(roles, "/parent");
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  };
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,hsl(46_96%_88%),transparent_55%),radial-gradient(circle_at_bottom_right,hsl(259_72%_18%),hsl(246_32%_6%))] text-foreground">
       <Seo
@@ -28,12 +41,25 @@ const Index = () => {
             <Link to="/school" className="text-muted-foreground transition-colors hover:text-foreground">
               For Schools
             </Link>
-            <Link to="/parent" className="text-muted-foreground transition-colors hover:text-foreground">
-              Parent Login
-            </Link>
-            <Button asChild size="sm" variant="hero">
-              <Link to="/student">Enroll a Child</Link>
-            </Button>
+            {user ? (
+              <div className="flex items-center gap-3">
+                <Button asChild size="sm" variant="outline">
+                  <Link to={primaryDashboardPath}>Go to dashboard</Link>
+                </Button>
+                <Button size="sm" variant="ghost" onClick={handleSignOut}>
+                  Sign out
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Link to="/auth" className="text-muted-foreground transition-colors hover:text-foreground">
+                  Parent / School Login
+                </Link>
+                <Button asChild size="sm" variant="hero">
+                  <Link to="/auth">Enroll a Child</Link>
+                </Button>
+              </>
+            )}
           </nav>
         </div>
       </header>
@@ -57,7 +83,7 @@ const Index = () => {
             </div>
             <div className="flex flex-wrap items-center gap-4">
               <Button asChild size="lg" variant="hero">
-                <Link to="/parent">Register a Child</Link>
+                <Link to="/auth">Register a Child</Link>
               </Button>
               <Button asChild size="lg" variant="pill">
                 <Link to="/school">Partner as a School</Link>
