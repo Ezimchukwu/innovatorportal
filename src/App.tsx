@@ -28,10 +28,16 @@ const App = () => (
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/projects" element={<PublicGalleryPage />} />
 
-            <Route element={<ProtectedRoute />}>
+            <Route element={<ProtectedRoute requireRole="student" />}>
               <Route path="/student" element={<StudentDashboardPage />} />
+            </Route>
+            <Route element={<ProtectedRoute requireRole="parent" />}>
               <Route path="/parent" element={<ParentDashboardPage />} />
+            </Route>
+            <Route element={<ProtectedRoute requireRole="school" />}>
               <Route path="/school" element={<SchoolDashboardPage />} />
+            </Route>
+            <Route element={<ProtectedRoute requireRole="admin" />}>
               <Route path="/admin" element={<AdminDashboardPage />} />
             </Route>
 
