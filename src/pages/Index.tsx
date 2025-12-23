@@ -1,12 +1,173 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { Seo } from "@/components/Seo";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,hsl(46_96%_88%),transparent_55%),radial-gradient(circle_at_bottom_right,hsl(259_72%_18%),hsl(246_32%_6%))] text-foreground">
+      <Seo
+        title="Home"
+        description="AI Innovators Portal showcases African youth building real AI projects with parent and school dashboards for tracking progress."
+        canonical={window.location.origin}
+      />
+      <header className="border-b border-border/60 bg-background/70 backdrop-blur-sm">
+        <div className="container flex items-center justify-between py-4">
+          <Link to="/" className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-secondary shadow-sm">
+              <span className="text-lg font-semibold text-primary">AI</span>
+            </div>
+            <div className="flex flex-col leading-tight">
+              <span className="text-sm font-semibold tracking-tight">AI Innovators</span>
+              <span className="text-xs text-muted-foreground">Young Minds, Bold Ideas</span>
+            </div>
+          </Link>
+          <nav className="flex items-center gap-6 text-sm">
+            <Link to="/projects" className="text-muted-foreground transition-colors hover:text-foreground">
+              View Projects
+            </Link>
+            <Link to="/school" className="text-muted-foreground transition-colors hover:text-foreground">
+              For Schools
+            </Link>
+            <Link to="/parent" className="text-muted-foreground transition-colors hover:text-foreground">
+              Parent Login
+            </Link>
+            <Button asChild size="sm" variant="hero">
+              <Link to="/student">Enroll a Child</Link>
+            </Button>
+          </nav>
+        </div>
+      </header>
+
+      <main className="container pb-16 pt-10 md:pt-16">
+        <section className="grid gap-10 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] md:items-center">
+          <div className="space-y-6">
+            <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/70 px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-accent" />
+              Nigeria’s first AI project portfolio for teens
+            </div>
+            <div className="space-y-4">
+              <h1 className="text-balance text-4xl font-semibold tracking-tight md:text-5xl lg:text-6xl">
+                Turn African teens into <span className="bg-[var(--gradient-hero)] bg-clip-text text-transparent">AI innovators</span>,
+                not just app users.
+              </h1>
+              <p className="max-w-xl text-balance text-base text-muted-foreground md:text-lg">
+                A simple portal where schools and parents track real AI projects – web apps, chatbots, and designs – built by
+                young Nigerians and emerging innovators across Africa.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-4">
+              <Button asChild size="lg" variant="hero">
+                <Link to="/parent">Register a Child</Link>
+              </Button>
+              <Button asChild size="lg" variant="pill">
+                <Link to="/school">Partner as a School</Link>
+              </Button>
+              <button className="group inline-flex items-center gap-2 text-sm font-medium text-foreground/80">
+                <span className="rounded-full bg-card/70 px-3 py-1 text-xs uppercase tracking-wide text-muted-foreground">
+                  Proof of Learning
+                </span>
+                <Link to="/projects" className="underline-offset-4 group-hover:underline">
+                  View student projects
+                </Link>
+              </button>
+            </div>
+
+            <div className="grid gap-4 text-xs text-muted-foreground md:grid-cols-3">
+              <div className="rounded-2xl bg-card/70 p-4 shadow-sm">
+                <p className="font-semibold text-foreground">For Schools</p>
+                <p className="mt-1 leading-snug">Lightweight dashboards to track participation and showcase your school’s best work.</p>
+              </div>
+              <div className="rounded-2xl bg-card/70 p-4 shadow-sm">
+                <p className="font-semibold text-foreground">For Parents</p>
+                <p className="mt-1 leading-snug">See progress, feedback, and certificates – only for your child.</p>
+              </div>
+              <div className="rounded-2xl bg-card/70 p-4 shadow-sm">
+                <p className="font-semibold text-foreground">For Students</p>
+                <p className="mt-1 leading-snug">A portfolio of real AI projects you can share with the world.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative">
+            <div className="pointer-events-none absolute -left-10 top-6 h-40 w-40 rounded-full bg-accent/30 blur-3xl" />
+            <div className="pointer-events-none absolute -right-8 bottom-0 h-32 w-32 rounded-full bg-primary/30 blur-3xl" />
+            <div className="relative rounded-3xl border border-border/80 bg-card/90 p-5 shadow-[var(--shadow-soft)]">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">Live student cohort</p>
+                  <p className="text-sm font-semibold">AI Young Innovators – Lagos</p>
+                </div>
+                <div className="flex items-center gap-2 rounded-full bg-secondary/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-secondary-foreground">
+                  <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                  42 active projects
+                </div>
+              </div>
+
+              <div className="grid gap-3 text-xs">
+                <div className="flex items-center justify-between rounded-2xl bg-muted/80 px-3 py-2">
+                  <div className="space-y-0.5">
+                    <p className="font-medium">Chatbot for School Fees FAQs</p>
+                    <p className="text-[11px] text-muted-foreground">Built by Junior Secondary 2, Abuja</p>
+                  </div>
+                  <span className="rounded-full bg-background px-2 py-1 text-[10px] font-semibold text-muted-foreground">
+                    NLP
+                  </span>
+                </div>
+                <div className="flex items-center justify-between rounded-2xl bg-muted/80 px-3 py-2">
+                  <div className="space-y-0.5">
+                    <p className="font-medium">AI Career Guide for Teens</p>
+                    <p className="text-[11px] text-muted-foreground">Virtual cohort · Pan-Nigeria</p>
+                  </div>
+                  <span className="rounded-full bg-background px-2 py-1 text-[10px] font-semibold text-muted-foreground">
+                    Portfolio
+                  </span>
+                </div>
+                <div className="flex items-center justify-between rounded-2xl bg-muted/80 px-3 py-2">
+                  <div className="space-y-0.5">
+                    <p className="font-medium">Climate Story Visualizer</p>
+                    <p className="text-[11px] text-muted-foreground">Senior Secondary 1, Ibadan</p>
+                  </div>
+                  <span className="rounded-full bg-background px-2 py-1 text-[10px] font-semibold text-muted-foreground">
+                    Vision
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-center justify-between text-[11px] text-muted-foreground">
+                <p>Secure dashboards for parents, schools and students.</p>
+                <p className="font-medium text-foreground">Built for Nigeria, open to Africa.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-16 border-t border-dashed border-border/70 pt-10">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold tracking-tight">Trusted by forward-thinking schools</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Simple to adopt, no complex tech setup required.</p>
+            </div>
+            <div className="flex flex-wrap gap-3 text-xs font-medium text-muted-foreground">
+              <span className="rounded-full bg-card/80 px-3 py-1">Primary & Secondary Schools</span>
+              <span className="rounded-full bg-card/80 px-3 py-1">After-school Programs</span>
+              <span className="rounded-full bg-card/80 px-3 py-1">Virtual Cohorts</span>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="border-t border-border/60 bg-background/80">
+        <div className="container flex flex-col gap-4 py-6 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between">
+          <p>© {new Date().getFullYear()} AI Innovators Program. Growing Africa’s next generation of builders.</p>
+          <div className="flex flex-wrap gap-4">
+            <Link to="/projects" className="hover:text-foreground">
+              Public projects
+            </Link>
+            <span className="hidden h-4 w-px bg-border/70 md:inline-block" />
+            <span>Built with privacy, safety and parent trust in mind.</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
