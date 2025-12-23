@@ -10,38 +10,38 @@ All colors MUST be HSL.
   :root {
     /* Kid-friendly EdTech palette: vibrant, trustworthy, and energetic */
     /* Background & text */
-    --background: 210 40% 98%; /* Cloud White (#F9FAFB) */
-    --foreground: 217 19% 27%; /* Deep Charcoal (#1F2937) */
+    --background: 0 0% 100%; /* Primary Background: Pure White (#FFFFFF) */
+    --foreground: 222 47% 11%; /* Primary Text: Deep Ink (#0F172A) */
 
     /* Surfaces */
     --card: 0 0% 100%;
-    --card-foreground: 217 19% 27%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 217 19% 27%;
+    --popover-foreground: 222 47% 11%;
 
     /* Brand colors */
-    --primary: 243 75% 59%; /* Electric Indigo (#4F46E5) */
-    --primary-foreground: 210 40% 98%;
+    --primary: 217 91% 60%; /* SkyTech Blue (#2563EB) */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 13 100% 65%; /* Sunshine Coral (#FF6B4A) */
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 25 95% 53%; /* Bright Learning Orange (#F97316) */
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 217 19% 40%;
+    --muted: 214 100% 97%; /* Soft Section Background: Light Cloud Blue (#EFF6FF) */
+    --muted-foreground: 215 20% 65%; /* Secondary Text: Cool Gray (#64748B) */
 
-    --accent: 45 100% 66%; /* Soft Lemon Yellow (#FFD84D) */
-    --accent-foreground: 217 19% 27%;
+    --accent: 214 100% 97%; /* Soft blue accent for gentle highlights */
+    --accent-foreground: 222 47% 11%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%; /* Friendly Signal Red (#EF4444) */
+    --destructive-foreground: 0 0% 100%;
 
-    --success: 145 63% 49%; /* Fresh Mint Green (#2ECC71) */
-    --success-foreground: 210 40% 98%;
+    --success: 142 72% 47%; /* Success Green (#22C55E) */
+    --success-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 243 75% 59%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 217 91% 60%;
 
     --radius: 0.9rem;
 
@@ -56,9 +56,9 @@ All colors MUST be HSL.
     --sidebar-ring: 45 100% 66%;
 
     /* Brand gradients & effects */
-    --gradient-hero: linear-gradient(135deg, hsl(243 75% 59%), hsl(13 100% 65%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(210 40% 98%));
-    --gradient-pill: linear-gradient(120deg, hsl(243 75% 59%), hsl(45 100% 66%));
+    --gradient-hero: linear-gradient(135deg, hsl(217 91% 60%), hsl(214 100% 97%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(214 100% 97%));
+    --gradient-pill: linear-gradient(120deg, hsl(217 91% 60%), hsl(25 95% 53%));
 
     --shadow-soft: 0 18px 45px hsl(217 19% 27% / 0.12);
     --shadow-glow: 0 0 0 1px hsl(45 100% 70% / 0.6), 0 0 40px hsl(243 75% 59% / 0.35);
