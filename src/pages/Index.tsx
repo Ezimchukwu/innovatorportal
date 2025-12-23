@@ -23,39 +23,49 @@ const Index = () => {
         description="AI Innovators Portal showcases African youth building real AI projects with parent and school dashboards for tracking progress."
         canonical={window.location.origin}
       />
-      <header className="border-b border-border/60 bg-background/70 backdrop-blur-sm">
+      <header className="border-b border-primary/20 bg-primary text-primary-foreground shadow-[var(--shadow-soft)]">
         <div className="container flex items-center justify-between py-4">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-secondary shadow-sm">
-              <span className="text-lg font-semibold text-primary">AI</span>
+          <Link to="/" className="flex items-center gap-2 hover-scale">
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-background/10 ring-1 ring-background/40">
+              <span className="text-lg font-semibold">AI</span>
             </div>
             <div className="flex flex-col leading-tight">
               <span className="text-sm font-semibold tracking-tight">AI Innovators</span>
-              <span className="text-xs text-muted-foreground">Young Minds, Bold Ideas</span>
+              <span className="text-xs text-primary-foreground/80">Young Minds, Bold Ideas</span>
             </div>
           </Link>
           <nav className="flex items-center gap-6 text-sm">
-            <Link to="/projects" className="text-muted-foreground transition-colors hover:text-foreground">
+            <Link
+              to="/projects"
+              className="text-primary-foreground/80 transition-colors hover:text-secondary hover-scale"
+            >
               View Projects
             </Link>
-            <Link to="/school" className="text-muted-foreground transition-colors hover:text-foreground">
+            <Link to="/school" className="text-primary-foreground/80 transition-colors hover:text-secondary hover-scale">
               For Schools
             </Link>
             {user ? (
               <div className="flex items-center gap-3">
-                <Button asChild size="sm" variant="outline">
+                <Button asChild size="sm" variant="secondary" className="hover-scale">
                   <Link to={primaryDashboardPath}>Go to dashboard</Link>
                 </Button>
-                <Button size="sm" variant="ghost" onClick={handleSignOut}>
+                <Button size="sm" variant="outline" className="border-background/20 bg-background/10 text-primary-foreground hover:bg-background/20 hover-scale" onClick={handleSignOut}>
                   Sign out
                 </Button>
               </div>
             ) : (
               <>
-                <Link to="/auth" className="text-muted-foreground transition-colors hover:text-foreground">
+                <Link
+                  to="/auth"
+                  className="text-primary-foreground/80 transition-colors hover:text-secondary hover-scale"
+                >
                   Parent / School Login
                 </Link>
-                <Button asChild size="sm" variant="hero">
+                <Button
+                  asChild
+                  size="sm"
+                  className="hover-scale bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[var(--shadow-soft)]"
+                >
                   <Link to="/auth">Enroll a Child</Link>
                 </Button>
               </>
@@ -82,10 +92,19 @@ const Index = () => {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-4">
-              <Button asChild size="lg" variant="hero" className="hover-scale">
+              <Button
+                asChild
+                size="lg"
+                className="hover-scale bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[var(--shadow-soft)]"
+              >
                 <Link to="/auth">Register a Child</Link>
               </Button>
-              <Button asChild size="lg" variant="pill" className="hover-scale">
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="hover-scale border-primary/40 bg-background text-primary hover:bg-muted/60"
+              >
                 <Link to="/school">Partner as a School</Link>
               </Button>
               <button className="group inline-flex items-center gap-2 text-sm font-medium text-foreground/80 story-link">
