@@ -17,7 +17,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,hsl(46_96%_88%),transparent_55%),radial-gradient(circle_at_bottom_right,hsl(259_72%_18%),hsl(246_32%_6%))] text-foreground">
+    <div className="min-h-screen bg-background text-foreground">
       <Seo
         title="Home"
         description="AI Innovators Portal showcases African youth building real AI projects with parent and school dashboards for tracking progress."
