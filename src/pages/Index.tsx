@@ -98,19 +98,14 @@ const Index = () => {
               >
                 <Link to="/auth">Register a Child</Link>
               </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="hover-scale border-primary/40 bg-background text-primary hover:bg-muted/60"
-              >
-                <Link to="/school">Partner as a School</Link>
-              </Button>
-              <button className="group inline-flex items-center gap-2 text-sm font-medium text-foreground/80 story-link">
-                <span className="rounded-full bg-card/70 px-3 py-1 text-xs uppercase tracking-wide text-muted-foreground">
+              <button className="group inline-flex items-center gap-3 text-sm font-semibold text-foreground">
+                <span className="rounded-full bg-card px-3 py-1.5 text-[11px] uppercase tracking-wide text-primary">
                   Proof of Learning
                 </span>
-                <Link to="/projects" className="underline-offset-4 group-hover:underline">
+                <Link
+                  to="/projects"
+                  className="hover-scale rounded-full border border-primary/40 bg-background px-4 py-1.5 text-sm font-semibold text-primary shadow-sm transition-colors hover:bg-primary hover:text-primary-foreground"
+                >
                   View student projects
                 </Link>
               </button>

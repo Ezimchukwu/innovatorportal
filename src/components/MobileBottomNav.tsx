@@ -11,19 +11,17 @@ export const MobileBottomNav = () => {
   const { user } = useAuth();
   const { roles } = useUserRoles();
   const dashboardPath = getPrimaryDashboardPath(roles, "/parent");
-
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-primary/20 bg-background/95 backdrop-blur md:hidden">
-      <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-2.5 text-xs font-medium text-muted-foreground">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-primary/15 bg-background/95 backdrop-blur md:hidden">
+      <div className="mx-auto flex max-w-4xl items-center justify-between px-5 py-2 text-[11px] font-medium text-muted-foreground">
         <Link
           to="/"
           className={cn(
-            "flex flex-1 flex-col items-center gap-1",
-            buttonVariants({ variant: "ghost", size: "icon" }),
-            "h-auto w-auto rounded-full bg-transparent px-0 py-0 text-[11px]",
-            isActive("/") && "text-primary"
+            "flex flex-1 flex-col items-center gap-1 hover-scale",
+            "rounded-full px-2 py-1 transition-colors",
+            isActive("/") && "bg-secondary/90 text-secondary-foreground shadow-[var(--shadow-soft)]"
           )}
         >
           <Home className="h-5 w-5" />
@@ -33,10 +31,9 @@ export const MobileBottomNav = () => {
         <Link
           to={user ? dashboardPath : "/auth"}
           className={cn(
-            "flex flex-1 flex-col items-center gap-1",
-            buttonVariants({ variant: "ghost", size: "icon" }),
-            "h-auto w-auto rounded-full bg-transparent px-0 py-0 text-[11px]",
-            isActive(dashboardPath) && "text-primary"
+            "flex flex-1 flex-col items-center gap-1 hover-scale",
+            "rounded-full px-2 py-1 transition-colors",
+            isActive(dashboardPath) && "bg-secondary/90 text-secondary-foreground shadow-[var(--shadow-soft)]"
           )}
         >
           <LayoutDashboard className="h-5 w-5" />
@@ -46,10 +43,9 @@ export const MobileBottomNav = () => {
         <Link
           to="/projects"
           className={cn(
-            "flex flex-1 flex-col items-center gap-1",
-            buttonVariants({ variant: "ghost", size: "icon" }),
-            "h-auto w-auto rounded-full bg-transparent px-0 py-0 text-[11px]",
-            isActive("/projects") && "text-primary"
+            "flex flex-1 flex-col items-center gap-1 hover-scale",
+            "rounded-full px-2 py-1 transition-colors",
+            isActive("/projects") && "bg-secondary/90 text-secondary-foreground shadow-[var(--shadow-soft)]"
           )}
         >
           <Sparkles className="h-5 w-5" />
