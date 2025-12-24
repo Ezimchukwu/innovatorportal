@@ -15,12 +15,14 @@ type ParentRow = Tables<"parents">;
 type StudentRow = Tables<"students">;
 type ProjectRow = Tables<"projects">;
 type AssignmentRow = Tables<"assignments">;
+type PaymentRow = Tables<"payments">;
 
 type DashboardData = {
   parent: ParentRow | null;
   students: StudentRow[];
   projectsByStudent: Record<string, ProjectRow[]>;
   assignmentsByStudent: Record<string, AssignmentRow[]>;
+  payments: PaymentRow[];
 };
 
 const childSetupSchema = z.object({
@@ -57,7 +59,13 @@ const fetchParentDashboard = async (userId: string): Promise<DashboardData> => {
   if (parentError) throw parentError;
 
   if (!parent) {
-    return { parent: null, students: [], projectsByStudent: {}, assignmentsByStudent: {} };
+    return {
+      parent: null,
+      students: [],
+      projectsByStudent: {},
+      assignmentsByStudent: {},
+      payments: [],
+    };
   }
 
   // 2) Linked students via parent_students
@@ -70,53 +78,72 @@ const fetchParentDashboard = async (userId: string): Promise<DashboardData> => {
 
   const studentIds = (links ?? []).map((l) => l.student_id).filter(Boolean) as string[];
 
-  if (studentIds.length === 0) {
-    return { parent, students: [], projectsByStudent: {}, assignmentsByStudent: {} };
+  // 3) Student records (if any)
+  let students: StudentRow[] = [];
+  let projectsByStudent: Record<string, ProjectRow[]> = {};
+  let assignmentsByStudent: Record<string, AssignmentRow[]> = {};
+
+  if (studentIds.length > 0) {
+    const { data: studentsData, error: studentsError } = await supabase
+      .from("students")
+      .select("*")
+      .in("id", studentIds);
+
+    if (studentsError) throw studentsError;
+
+    students = studentsData ?? [];
+
+    // Projects for all linked students (RLS ensures only allowed rows)
+    const { data: projects, error: projectsError } = await supabase
+      .from("projects")
+      .select("*")
+      .in("student_id", studentIds)
+      .order("created_at", { ascending: false });
+
+    if (projectsError) throw projectsError;
+
+    // Assignments for all linked students
+    const { data: assignments, error: assignmentsError } = await supabase
+      .from("assignments")
+      .select("*")
+      .in("student_id", studentIds)
+      .order("created_at", { ascending: false });
+
+    if (assignmentsError) throw assignmentsError;
+
+    projectsByStudent = {};
+    (projects ?? []).forEach((p) => {
+      const key = p.student_id;
+      if (!key) return;
+      if (!projectsByStudent[key]) projectsByStudent[key] = [];
+      projectsByStudent[key].push(p);
+    });
+
+    assignmentsByStudent = {};
+    (assignments ?? []).forEach((a) => {
+      const key = a.student_id;
+      if (!key) return;
+      if (!assignmentsByStudent[key]) assignmentsByStudent[key] = [];
+      assignmentsByStudent[key].push(a);
+    });
   }
 
-  // 3) Student records
-  const { data: students, error: studentsError } = await supabase
-    .from("students")
+  // 4) Payments for this parent account (linked by user_id)
+  const { data: payments, error: paymentsError } = await supabase
+    .from("payments")
     .select("*")
-    .in("id", studentIds);
-
-  if (studentsError) throw studentsError;
-
-  // 4) Projects for all linked students (RLS ensures only allowed rows)
-  const { data: projects, error: projectsError } = await supabase
-    .from("projects")
-    .select("*")
-    .in("student_id", studentIds)
+    .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  if (projectsError) throw projectsError;
+  if (paymentsError) throw paymentsError;
 
-  // 5) Assignments for all linked students
-  const { data: assignments, error: assignmentsError } = await supabase
-    .from("assignments")
-    .select("*")
-    .in("student_id", studentIds)
-    .order("created_at", { ascending: false });
-
-  if (assignmentsError) throw assignmentsError;
-
-  const projectsByStudent: Record<string, ProjectRow[]> = {};
-  (projects ?? []).forEach((p) => {
-    const key = p.student_id;
-    if (!key) return;
-    if (!projectsByStudent[key]) projectsByStudent[key] = [];
-    projectsByStudent[key].push(p);
-  });
-
-  const assignmentsByStudent: Record<string, AssignmentRow[]> = {};
-  (assignments ?? []).forEach((a) => {
-    const key = a.student_id;
-    if (!key) return;
-    if (!assignmentsByStudent[key]) assignmentsByStudent[key] = [];
-    assignmentsByStudent[key].push(a);
-  });
-
-  return { parent, students: students ?? [], projectsByStudent, assignmentsByStudent };
+  return {
+    parent,
+    students,
+    projectsByStudent,
+    assignmentsByStudent,
+    payments: payments ?? [],
+  };
 };
 
 export const ParentDashboardPage = () => {
@@ -148,6 +175,8 @@ export const ParentDashboardPage = () => {
 
   const parent = data?.parent ?? null;
   const students = data?.students ?? [];
+  const payments = data?.payments ?? [];
+  const latestPayment = payments[0];
 
   const handleChildChange = (
     field: keyof z.infer<typeof childSetupSchema>,
@@ -482,6 +511,69 @@ export const ParentDashboardPage = () => {
             </div>
 
             <aside className="space-y-4 text-sm text-muted-foreground">
+              <div className="rounded-3xl border border-primary/15 bg-card/90 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
+                  Payment history
+                </p>
+                {payments.length === 0 ? (
+                  <p className="mt-2 text-xs">
+                    Once you complete an enrollment payment, it will appear here with a status and reference you can share
+                    with support.
+                  </p>
+                ) : (
+                  <div className="mt-2 space-y-3 text-xs">
+                    {latestPayment && (
+                      <div className="rounded-2xl bg-muted/60 px-3 py-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+                              Latest payment
+                            </p>
+                            <p className="mt-1 text-sm font-semibold text-foreground">
+                              {latestPayment.currency} {Number(latestPayment.amount).toLocaleString()}
+                            </p>
+                          </div>
+                          <span
+                            className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${
+                              latestPayment.status === "verified"
+                                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                : latestPayment.status === "pending"
+                                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                  : "bg-destructive/10 text-destructive"
+                            }`}
+                          >
+                            {latestPayment.status}
+                          </span>
+                        </div>
+                        {latestPayment.provider_reference && (
+                          <p className="mt-2 text-[11px] font-mono text-muted-foreground break-all">
+                            Ref: {latestPayment.provider_reference}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {payments.length > 1 && (
+                      <div className="space-y-1.5">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-foreground/80">
+                          Previous payments
+                        </p>
+                        <ul className="space-y-1.5 text-[11px]">
+                          {payments.slice(1, 4).map((payment) => (
+                            <li key={payment.id} className="flex items-center justify-between gap-2">
+                              <span className="truncate">
+                                {payment.currency} {Number(payment.amount).toLocaleString()}
+                              </span>
+                              <span className="text-muted-foreground">{payment.status}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="rounded-3xl border border-border/70 bg-card/90 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-accent-foreground/80">
                   Certificate status
