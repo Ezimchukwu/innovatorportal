@@ -252,7 +252,7 @@ export const SchoolDashboardPage = () => {
         {!isLoading && !isError && school && (
           <section className="grid gap-6 md:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
             <div className="space-y-4">
-              <div className="rounded-3xl border border-border/70 bg-card/90 p-5 shadow-sm">
+              <div className="rounded-3xl border border-primary/10 bg-card p-5 shadow-[var(--shadow-soft)]">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold text-foreground">{school.name}</p>
@@ -407,7 +407,12 @@ export const SchoolDashboardPage = () => {
                   </div>
 
                   <div className="flex justify-end">
-                    <Button type="submit" size="sm" disabled={creating || students.length === 0}>
+                    <Button
+                      type="submit"
+                      size="sm"
+                      disabled={creating || students.length === 0}
+                      className="hover-scale bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[var(--shadow-soft)]"
+                    >
                       {creating ? "Saving project..." : "Save project"}
                     </Button>
                   </div>
@@ -429,7 +434,7 @@ export const SchoolDashboardPage = () => {
                       return (
                         <div
                           key={student.id}
-                          className="rounded-2xl border border-border/70 bg-card/90 p-3 text-xs"
+                          className="rounded-2xl border border-primary/5 bg-card p-3 text-xs shadow-sm"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <div>
@@ -466,7 +471,7 @@ export const SchoolDashboardPage = () => {
             </div>
 
             <aside className="space-y-4 text-sm text-muted-foreground">
-              <div className="rounded-3xl border border-border/70 bg-card/90 p-4 text-xs">
+              <div className="rounded-3xl border border-primary/10 bg-card p-4 text-xs shadow-[var(--shadow-soft)]">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-foreground/80">
                   Data & gallery rules
                 </p>
