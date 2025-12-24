@@ -82,13 +82,9 @@ const Index = () => {
               Nigeria’s first AI project portfolio for teens
             </div>
             <div className="space-y-4">
-              <h1 className="text-balance text-4xl font-semibold tracking-tight md:text-5xl lg:text-6xl">
-                Turn African teens into <span className="bg-[var(--gradient-hero)] bg-clip-text text-transparent">AI innovators</span>,
-                not just app users.
+              <h1 className="text-balance text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl">
+                Where Young Minds Don&apos;t Just Learn AI — They Build With It.
               </h1>
-              <p className="max-w-xl text-sm font-semibold text-primary md:text-base">
-                Where Young Minds Don"t Just Learn AI — They Build With It.
-              </p>
               <p className="max-w-xl text-balance text-sm text-muted-foreground md:text-base">
                 A trusted AI project portal where African students create real-world solutions, showcase their work publicly,
                 and prove their skills through hands-on projects tracked by parents and schools.
