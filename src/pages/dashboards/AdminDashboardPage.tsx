@@ -1,5 +1,7 @@
 import { Seo } from "@/components/Seo";
 import { Button } from "@/components/ui/button";
+import { MainNavbar } from "@/components/MainNavbar";
+
 import { useNavigate } from "react-router-dom";
 
 export const AdminDashboardPage = () => {
@@ -11,6 +13,7 @@ export const AdminDashboardPage = () => {
         description="Approve users, manage roles, projects and payments for the AI Innovators Portal."
         canonical={`${window.location.origin}/admin`}
       />
+      <MainNavbar />
       <main className="container pb-24 pt-10">
         <div className="mb-4">
           <Button

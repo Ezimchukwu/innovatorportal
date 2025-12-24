@@ -2,6 +2,7 @@ import { Seo } from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MainNavbar } from "@/components/MainNavbar";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
@@ -268,6 +269,7 @@ export const ParentDashboardPage = () => {
         description="Track your child’s AI learning progress, projects and certificates securely."
         canonical={`${window.location.origin}/parent`}
       />
+      <MainNavbar />
       <main className="container pb-24 pt-10">
         <header className="mb-5 animate-fade-in">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-foreground/70">Parent View</p>

@@ -1,5 +1,6 @@
 import { Seo } from "@/components/Seo";
 import { Button } from "@/components/ui/button";
+import { MainNavbar } from "@/components/MainNavbar";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { useQuery } from "@tanstack/react-query";
@@ -33,12 +34,13 @@ export const PublicGalleryPage = () => {
   } = useQuery({ queryKey: ["public-projects"], queryFn: fetchPublicProjects });
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground">
       <Seo
         title="Public Projects Gallery"
         description="Browse real AI projects created by students in the AI Innovators Program across Nigeria and Africa."
         canonical={`${window.location.origin}/projects`}
       />
+      <MainNavbar />
       <main className="container pb-16 pt-10">
         <div className="mb-4">
           <Button
