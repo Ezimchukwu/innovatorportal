@@ -374,7 +374,12 @@ export const ParentDashboardPage = () => {
               </div>
 
               <div className="md:col-span-2 mt-2 flex justify-end">
-                <Button type="submit" size="sm" disabled={creatingChild}>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={creatingChild}
+                  className="hover-scale bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[var(--shadow-soft)]"
+                >
                   {creatingChild ? "Saving child..." : "Save child profile"}
                 </Button>
               </div>
@@ -394,7 +399,7 @@ export const ParentDashboardPage = () => {
                 return (
                   <div
                     key={student.id}
-                    className="rounded-3xl border border-border/70 bg-card/90 p-5 shadow-sm"
+                    className="rounded-3xl border border-primary/10 bg-card p-5 shadow-[var(--shadow-soft)]"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
@@ -483,7 +488,12 @@ export const ParentDashboardPage = () => {
                   Certificates will be available once your child completes the required projects and the cohort is marked as
                   finished by the program admin.
                 </p>
-                <Button className="mt-3 w-full" variant="subtle" size="sm" disabled>
+                <Button
+                  className="mt-3 w-full hover-scale bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[var(--shadow-soft)]"
+                  variant="subtle"
+                  size="sm"
+                  disabled
+                >
                   Download certificate (coming soon)
                 </Button>
               </div>

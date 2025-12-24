@@ -244,7 +244,7 @@ export const StudentDashboardPage = () => {
         {!isLoading && !isError && student && (
           <section className="grid gap-6 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
             <div className="space-y-4">
-              <div className="rounded-3xl border border-border/70 bg-card/90 p-5 shadow-sm">
+              <div className="rounded-3xl border border-primary/10 bg-card p-5 shadow-[var(--shadow-soft)]">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold text-foreground">{student.full_name}</p>
@@ -381,7 +381,12 @@ export const StudentDashboardPage = () => {
                   </div>
 
                   <div className="flex justify-end">
-                    <Button type="submit" size="sm" disabled={creating}>
+                    <Button
+                      type="submit"
+                      size="sm"
+                      disabled={creating}
+                      className="hover-scale bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[var(--shadow-soft)]"
+                    >
                       {creating ? "Saving project..." : "Save project"}
                     </Button>
                   </div>
@@ -401,7 +406,7 @@ export const StudentDashboardPage = () => {
                     {projects.map((project) => (
                       <li
                         key={project.id}
-                        className="flex flex-col gap-2 rounded-2xl border border-border/70 bg-card/90 p-3 text-xs"
+                        className="flex flex-col gap-2 rounded-2xl border border-primary/5 bg-card p-3 text-xs shadow-sm"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div>
