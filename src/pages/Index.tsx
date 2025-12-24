@@ -75,7 +75,7 @@ const Index = () => {
       </header>
 
       <main className="container pb-24 pt-10 md:pt-16">
-        <section className="grid gap-10 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] md:items-center">
+        <section className="grid gap-10 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] md:items-center animate-fade-in">
           <div className="space-y-6">
             <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/70 px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm">
               <span className="h-2 w-2 rounded-full bg-accent" />
@@ -90,7 +90,7 @@ const Index = () => {
                 and prove their skills through hands-on projects tracked by parents and schools.
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center gap-3">
               <Button
                 asChild
                 size="lg"
@@ -98,17 +98,19 @@ const Index = () => {
               >
                 <Link to="/auth">Register a Child</Link>
               </Button>
-              <button className="group inline-flex items-center gap-3 text-sm font-semibold text-foreground">
-                <span className="rounded-full bg-card px-3 py-1.5 text-[11px] uppercase tracking-wide text-primary">
-                  Proof of Learning
-                </span>
-                <Link
-                  to="/projects"
-                  className="hover-scale rounded-full border border-primary/40 bg-background px-4 py-1.5 text-sm font-semibold text-primary shadow-sm transition-colors hover:bg-primary hover:text-primary-foreground"
-                >
-                  View student projects
-                </Link>
-              </button>
+              <Button
+                size="lg"
+                className="hover-scale bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[var(--shadow-soft)]"
+              >
+                Proof of Learning
+              </Button>
+              <Button
+                asChild
+                size="lg"
+                className="hover-scale bg-primary text-primary-foreground hover:bg-primary/90 shadow-[var(--shadow-soft)]"
+              >
+                <Link to="/projects">View student projects</Link>
+              </Button>
             </div>
 
             <div className="grid gap-4 text-xs text-muted-foreground md:grid-cols-3">

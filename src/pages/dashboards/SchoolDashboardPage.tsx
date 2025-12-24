@@ -216,11 +216,11 @@ export const SchoolDashboardPage = () => {
             ← Back
           </Button>
         </div>
-
-        <header className="mb-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-accent-foreground/70">School Portal</p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">Overview of your AI Innovators</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+ 
+        <header className="mb-5 animate-fade-in">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-foreground/70">School Portal</p>
+          <h1 className="mt-2 text-xl font-semibold tracking-tight md:text-2xl">Overview of your AI Innovators</h1>
+          <p className="mt-1 text-xs text-muted-foreground md:text-sm">
             Use this space to connect student profiles, log projects and decide which work should appear in school or public
             galleries.
           </p>
@@ -250,8 +250,8 @@ export const SchoolDashboardPage = () => {
         )}
 
         {!isLoading && !isError && school && (
-          <section className="grid gap-6 md:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-            <div className="space-y-4">
+          <section className="grid gap-5 md:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+            <div className="space-y-4 animate-enter">
               <div className="rounded-3xl border border-primary/10 bg-card p-5 shadow-[var(--shadow-soft)]">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>

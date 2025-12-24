@@ -269,10 +269,10 @@ export const ParentDashboardPage = () => {
         canonical={`${window.location.origin}/parent`}
       />
       <main className="container pb-24 pt-10">
-        <header className="mb-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-accent-foreground/70">Parent View</p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">Your child’s AI journey</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+        <header className="mb-5 animate-fade-in">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent-foreground/70">Parent View</p>
+          <h1 className="mt-2 text-xl font-semibold tracking-tight md:text-2xl">Your child’s AI journey</h1>
+          <p className="mt-1 text-xs text-muted-foreground md:text-sm">
             You&apos;ll only ever see information linked to your approved child profile. Public projects remain visible to
             everyone, but this space is private to you.
           </p>
@@ -388,8 +388,8 @@ export const ParentDashboardPage = () => {
         )}
 
         {!isLoading && !isError && parent && students.length > 0 && (
-          <section className="grid gap-6 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-            <div className="space-y-4">
+          <section className="grid gap-5 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+            <div className="space-y-4 animate-enter">
               {students.map((student) => {
                 const studentProjects = data!.projectsByStudent[student.id] ?? [];
                 const studentAssignments = data!.assignmentsByStudent[student.id] ?? [];
