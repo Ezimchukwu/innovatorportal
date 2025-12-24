@@ -204,7 +204,7 @@ export const SchoolDashboardPage = () => {
         description="Manage students and log AI projects for your school in a light, simple portal."
         canonical={`${window.location.origin}/school`}
       />
-      <main className="container pb-12 pt-10">
+      <main className="container pb-24 pt-10">
         <div className="mb-4 flex items-center justify-between gap-3">
           <Button
             type="button"

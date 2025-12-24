@@ -74,7 +74,7 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="container pb-16 pt-10 md:pt-16">
+      <main className="container pb-24 pt-10 md:pt-16">
         <section className="grid gap-10 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] md:items-center">
           <div className="space-y-6">
             <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/70 px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm">
