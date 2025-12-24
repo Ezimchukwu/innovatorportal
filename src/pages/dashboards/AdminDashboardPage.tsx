@@ -11,7 +11,7 @@ export const AdminDashboardPage = () => {
         description="Approve users, manage roles, projects and payments for the AI Innovators Portal."
         canonical={`${window.location.origin}/admin`}
       />
-      <main className="container pb-12 pt-10">
+      <main className="container pb-24 pt-10">
         <div className="mb-4">
           <Button
             type="button"

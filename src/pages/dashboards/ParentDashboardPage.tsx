@@ -268,7 +268,7 @@ export const ParentDashboardPage = () => {
         description="Track your child’s AI learning progress, projects and certificates securely."
         canonical={`${window.location.origin}/parent`}
       />
-      <main className="container pb-12 pt-10">
+      <main className="container pb-24 pt-10">
         <header className="mb-6">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-accent-foreground/70">Parent View</p>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight">Your child’s AI journey</h1>
