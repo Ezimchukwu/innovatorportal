@@ -1,5 +1,6 @@
 import { Seo } from "@/components/Seo";
 import { Button } from "@/components/ui/button";
+import { MainNavbar } from "@/components/MainNavbar";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
@@ -196,6 +197,7 @@ export const StudentDashboardPage = () => {
         description="View and create AI projects, track assignments and follow your AI learning journey."
         canonical={`${window.location.origin}/student`}
       />
+      <MainNavbar />
       <main className="container pb-24 pt-10">
         <div className="mb-4 flex items-center justify-between gap-3">
           <Button

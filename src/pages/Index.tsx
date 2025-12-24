@@ -1,7 +1,7 @@
 import { Seo } from "@/components/Seo";
 import { Button } from "@/components/ui/button";
+import { MainNavbar } from "@/components/MainNavbar";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { getPrimaryDashboardPath } from "@/lib/roleRouting";
@@ -11,11 +11,6 @@ const Index = () => {
   const { roles } = useUserRoles();
   const primaryDashboardPath = getPrimaryDashboardPath(roles, "/parent");
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    window.location.href = "/";
-  };
-
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Seo
@@ -23,56 +18,7 @@ const Index = () => {
         description="AI Innovators Portal showcases African youth building real AI projects with parent and school dashboards for tracking progress."
         canonical={window.location.origin}
       />
-      <header className="border-b border-primary/20 bg-primary text-primary-foreground shadow-[var(--shadow-soft)]">
-        <div className="container flex items-center justify-between py-4">
-          <Link to="/" className="flex items-center gap-2 hover-scale">
-            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-background/10 ring-1 ring-background/40">
-              <span className="text-lg font-semibold">AI</span>
-            </div>
-            <div className="flex flex-col leading-tight">
-              <span className="text-sm font-semibold tracking-tight">AI Innovators</span>
-              <span className="text-xs text-primary-foreground/80">Young Minds, Bold Ideas</span>
-            </div>
-          </Link>
-          <nav className="flex items-center gap-6 text-sm">
-            <Link
-              to="/projects"
-              className="text-primary-foreground/80 transition-colors hover:text-secondary hover-scale"
-            >
-              View Projects
-            </Link>
-            <Link to="/school" className="text-primary-foreground/80 transition-colors hover:text-secondary hover-scale">
-              For Schools
-            </Link>
-            {user ? (
-              <div className="flex items-center gap-3">
-                <Button asChild size="sm" variant="secondary" className="hover-scale">
-                  <Link to={primaryDashboardPath}>Go to dashboard</Link>
-                </Button>
-                <Button size="sm" variant="outline" className="border-background/20 bg-background/10 text-primary-foreground hover:bg-background/20 hover-scale" onClick={handleSignOut}>
-                  Sign out
-                </Button>
-              </div>
-            ) : (
-              <>
-                <Link
-                  to="/auth"
-                  className="text-primary-foreground/80 transition-colors hover:text-secondary hover-scale"
-                >
-                  Parent / School Login
-                </Link>
-                <Button
-                  asChild
-                  size="sm"
-                  className="hover-scale bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[var(--shadow-soft)]"
-                >
-                  <Link to="/auth">Enroll a Child</Link>
-                </Button>
-              </>
-            )}
-          </nav>
-        </div>
-      </header>
+      <MainNavbar />
 
       <main className="container pb-24 pt-10 md:pt-16">
         <section className="grid gap-10 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] md:items-center animate-fade-in">
