@@ -27,12 +27,12 @@ export const PaymentsPage = () => {
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paystack-init`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          amount: ENROLLMENT_AMOUNT_KOBO,
-          callback_url: `${window.location.origin}/auth`,
-        }),
-      });
+          body: JSON.stringify({
+            email,
+            amount: ENROLLMENT_AMOUNT_KOBO,
+            callback_url: `${window.location.origin}/payments/success`,
+          }),
+        });
 
       const data = await res.json();
       if (!res.ok || !data.authorization_url) {
