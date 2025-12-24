@@ -1,0 +1,2 @@
+-- Simple payments placeholder page table is not needed; just frontend route.
+-- No DB changes required.

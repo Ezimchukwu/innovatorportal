@@ -14,6 +14,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { AuthPage } from "@/pages/AuthPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import PaymentsPage from "@/pages/PaymentsPage";
 
 const queryClient = new QueryClient();
 
@@ -26,9 +27,10 @@ const App = () => (
         <AuthProvider>
           <div className="relative min-h-screen">
             <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<AuthPage />} />
-              <Route path="/projects" element={<PublicGalleryPage />} />
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/projects" element={<PublicGalleryPage />} />
+            <Route path="/payments" element={<PaymentsPage />} />
 
               <Route element={<ProtectedRoute requireRole="student" />}>
                 <Route path="/student" element={<StudentDashboardPage />} />
