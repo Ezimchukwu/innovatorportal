@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 type ProjectRow = Tables<"projects">;
 
@@ -32,6 +33,21 @@ export const PublicGalleryPage = () => {
     isError,
     error,
   } = useQuery({ queryKey: ["public-projects"], queryFn: fetchPublicProjects });
+
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [schoolFilter, setSchoolFilter] = useState<string>("all");
+  const [cohortFilter, setCohortFilter] = useState<string>("all");
+
+  const mediaTypes = ["all", ...Array.from(new Set((projects ?? []).map((p) => p.media_type)))];
+  const cohorts = ["all", ...Array.from(new Set((projects ?? []).map((p) => p.cohort).filter(Boolean)))] as string[];
+
+  const filtered = (projects ?? []).filter((project) => {
+    const matchesType = typeFilter === "all" || project.media_type === typeFilter;
+    const schoolCategory = project.school_id ? "partner" : "independent";
+    const matchesSchool = schoolFilter === "all" || schoolFilter === schoolCategory;
+    const matchesCohort = cohortFilter === "all" || project.cohort === cohortFilter;
+    return matchesType && matchesSchool && matchesCohort;
+  });
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -66,10 +82,51 @@ export const PublicGalleryPage = () => {
               projects appear in this gallery.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-            <span className="rounded-full bg-card px-3 py-1">Web Apps</span>
-            <span className="rounded-full bg-card px-3 py-1">Chatbots</span>
-            <span className="rounded-full bg-card px-3 py-1">Design &amp; Video</span>
+          <div className="flex flex-col gap-3 text-xs text-muted-foreground md:flex-row md:items-center md:gap-4">
+            <div className="flex flex-wrap gap-2">
+              {mediaTypes.map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setTypeFilter(type)}
+                  className={`rounded-full px-3 py-1 font-medium hover-scale ${
+                    typeFilter === type ? "bg-secondary text-secondary-foreground" : "bg-card text-muted-foreground"
+                  }`}
+                >
+                  {type === "all" ? "All types" : type.replace("_", " ")}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(["all", "partner", "independent"] as const).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setSchoolFilter(key)}
+                  className={`rounded-full px-3 py-1 font-medium hover-scale ${
+                    schoolFilter === key ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"
+                  }`}
+                >
+                  {key === "all" ? "All schools" : key === "partner" ? "Partner schools" : "Independent"}
+                </button>
+              ))}
+            </div>
+            {cohorts.length > 1 && (
+              <div className="flex flex-wrap gap-2">
+                {cohorts.map((cohort) => (
+                  <button
+                    key={cohort}
+                    type="button"
+                    onClick={() => setCohortFilter(cohort)}
+                    className={`rounded-full px-3 py-1 font-medium hover-scale ${
+                      cohortFilter === cohort ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"
+                    }`}
+                  >
+                    {cohort === "all" ? "All cohorts" : cohort}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </header>
 
@@ -96,22 +153,27 @@ export const PublicGalleryPage = () => {
           </div>
         )}
 
-        {!isLoading && !isError && (projects?.length ?? 0) > 0 && (
+        {!isLoading && !isError && filtered.length > 0 && (
           <section className="grid gap-5 md:grid-cols-3">
-            {projects!.map((project) => (
+            {filtered.map((project) => (
               <article
                 key={project.id}
-                className="group flex flex-col rounded-3xl border border-border/70 bg-card/90 p-4 shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-[var(--shadow-soft)]"
+                className="group flex flex-col rounded-3xl border border-primary/10 bg-card p-4 shadow-[var(--shadow-soft)] transition-transform duration-200 hover:-translate-y-1 hover:shadow-[var(--shadow-glow)]"
               >
                 <div className="mb-3 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
-                  <span className="rounded-full bg-secondary/80 px-2 py-1 font-semibold uppercase tracking-wide text-secondary-foreground">
+                  <span className="rounded-full bg-secondary/90 px-2 py-1 font-semibold uppercase tracking-wide text-secondary-foreground">
                     {project.media_type.replace("_", " ")}
                   </span>
-                  {project.cohort && <span>{project.cohort}</span>}
+                  <span className="rounded-full bg-primary/10 px-2 py-1 font-semibold text-[10px] text-primary">
+                    {project.school_id ? "Partner school" : "Independent learner"}
+                  </span>
                 </div>
                 <h2 className="text-sm font-semibold leading-snug text-foreground group-hover:text-primary">
                   {project.title}
                 </h2>
+                {project.cohort && (
+                  <p className="mt-1 text-[11px] font-medium text-primary/80">Cohort: {project.cohort}</p>
+                )}
                 {project.description && (
                   <p className="mt-1 line-clamp-3 text-[11px] text-muted-foreground">{project.description}</p>
                 )}
@@ -137,7 +199,7 @@ export const PublicGalleryPage = () => {
           </section>
         )}
 
-        <section className="mt-10 rounded-3xl border border-dashed border-border/80 bg-muted/60 p-5 text-sm text-muted-foreground">
+        <section className="mt-10 rounded-3xl border border-primary/15 bg-card p-5 text-sm text-muted-foreground">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-accent-foreground/80">
@@ -149,11 +211,20 @@ export const PublicGalleryPage = () => {
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Button asChild size="sm" variant="hero">
+              <Button
+                asChild
+                size="sm"
+                className="hover-scale bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[var(--shadow-soft)]"
+              >
                 <Link to="/school">Partner as a School</Link>
               </Button>
-              <Button asChild size="sm" variant="pill">
-                <Link to="/parent">Register a Child</Link>
+              <Button
+                asChild
+                size="sm"
+                variant="outline"
+                className="hover-scale border-primary/40 bg-background text-primary hover:bg-muted/60"
+              >
+                <Link to="/payments">Register a Child</Link>
               </Button>
             </div>
           </div>

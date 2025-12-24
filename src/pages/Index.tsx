@@ -42,13 +42,14 @@ const Index = () => {
                 size="lg"
                 className="hover-scale bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[var(--shadow-soft)]"
               >
-                <Link to="/auth">Register a Child</Link>
+                <Link to="/payments">Register a Child</Link>
               </Button>
               <Button
+                asChild
                 size="lg"
                 className="hover-scale bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[var(--shadow-soft)]"
               >
-                Proof of Learning
+                <Link to="/projects">Proof of Learning</Link>
               </Button>
               <Button
                 asChild
