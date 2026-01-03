@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 
-const ENROLLMENT_AMOUNT_NGN = 50000; // displayed amount
+const ENROLLMENT_AMOUNT_NGN = 30000; // displayed amount
 const ENROLLMENT_AMOUNT_KOBO = ENROLLMENT_AMOUNT_NGN * 100; // Paystack uses kobo
 
 export const PaymentsPage = () => {

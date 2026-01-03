@@ -243,10 +243,10 @@ export const SchoolDashboardPage = () => {
 
         {!isLoading && !isError && !school && (
           <div className="rounded-3xl border border-dashed border-border/70 bg-muted/40 p-6 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground">School profile not set up</p>
+            <p className="font-medium text-foreground">Awaiting admin setup</p>
             <p className="mt-1 max-w-xl">
-              We can&apos;t find a school linked to this account yet. Once your partnership is confirmed, a school owner profile
-              will unlock this dashboard.
+              We can&apos;t find a school profile linked to this account yet. Once an admin finishes your onboarding, your school
+              dashboard will unlock automatically.
             </p>
           </div>
         )}
