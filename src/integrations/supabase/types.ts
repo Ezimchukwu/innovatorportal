@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          body: string | null
+          created_at: string
+          created_by: string
+          id: string
+          target: Database["public"]["Enums"]["announcement_target"]
+          title: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          target?: Database["public"]["Enums"]["announcement_target"]
+          title: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          target?: Database["public"]["Enums"]["announcement_target"]
+          title?: string
+        }
+        Relationships: []
+      }
       approvals: {
         Row: {
           created_at: string
@@ -395,6 +422,7 @@ export type Database = {
       }
     }
     Enums: {
+      announcement_target: "all" | "students" | "parents" | "schools"
       app_role: "admin" | "school" | "parent" | "student"
       approval_status: "pending" | "approved" | "rejected"
       media_type:
@@ -534,6 +562,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      announcement_target: ["all", "students", "parents", "schools"],
       app_role: ["admin", "school", "parent", "student"],
       approval_status: ["pending", "approved", "rejected"],
       media_type: [
