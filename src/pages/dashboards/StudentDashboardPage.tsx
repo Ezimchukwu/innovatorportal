@@ -235,10 +235,10 @@ export const StudentDashboardPage = () => {
 
         {!isLoading && !isError && !student && (
           <div className="rounded-3xl border border-dashed border-border/70 bg-muted/40 p-6 text-sm text-muted-foreground">
-            <p className="font-medium text-foreground">Student profile not set up yet</p>
+            <p className="font-medium text-foreground">Awaiting admin setup</p>
             <p className="mt-1 max-w-xl">
-              Your login is working, but we can&apos;t find a student record linked to this account. Please contact your school or
-              the AI Innovators team to complete your registration.
+              Your login is working, but a student profile hasn&apos;t been linked to this account yet. Once an admin completes
+              your setup, this dashboard will load automatically.
             </p>
           </div>
         )}
