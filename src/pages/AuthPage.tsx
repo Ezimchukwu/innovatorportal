@@ -22,6 +22,8 @@ const authSchema = z.object({
 
 type AuthFormValues = z.infer<typeof authSchema>;
 
+const ADMIN_EMAIL = "divinetonyezimchukwu@gmail.com";
+
 type SelectableRole = Extract<AppRole, "student" | "parent" | "school">;
 
 export const AuthPage = () => {
@@ -133,32 +135,47 @@ export const AuthPage = () => {
 
         const signedInUser = data.user;
 
+        // Ensure the super admin email always receives the admin role
+        if (signedInUser?.email && signedInUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+          const { data: adminRoles, error: adminFetchError } = await supabase
+            .from("user_roles")
+            .select("id, role")
+            .eq("user_id", signedInUser.id);
+
+          if (!adminFetchError) {
+            const alreadyAdmin = adminRoles?.some((r) => r.role === "admin");
+            if (!alreadyAdmin) {
+              await supabase.from("user_roles").insert({ user_id: signedInUser.id, role: "admin" });
+            }
+          }
+        }
+
         // After successful login, ensure the chosen non-admin role exists
         if (signedInUser && selectedRole) {
           const { data: existingRoles, error: fetchError } = await supabase
             .from("user_roles")
             .select("id, role")
             .eq("user_id", signedInUser.id);
-
-          if (!fetchError) {
-            const alreadyHasRole = existingRoles?.some((r) => r.role === selectedRole);
-            if (!alreadyHasRole) {
-              const { error: insertError } = await supabase.from("user_roles").insert({
-                user_id: signedInUser.id,
-                role: selectedRole,
-              });
-
-              if (insertError) {
-                toast({
-                  title: "Could not set role",
-                  description: insertError.message,
-                  variant: "destructive",
-                });
-                return;
-              }
-            }
-          }
-        }
+ 
+           if (!fetchError) {
+             const alreadyHasRole = existingRoles?.some((r) => r.role === selectedRole);
+             if (!alreadyHasRole) {
+               const { error: insertError } = await supabase.from("user_roles").insert({
+                 user_id: signedInUser.id,
+                 role: selectedRole,
+               });
+ 
+               if (insertError) {
+                 toast({
+                   title: "Could not set role",
+                   description: insertError.message,
+                   variant: "destructive",
+                 });
+                 return;
+               }
+             }
+           }
+         }
 
         toast({
           title: "Welcome back",
