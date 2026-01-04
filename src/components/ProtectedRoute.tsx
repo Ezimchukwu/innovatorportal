@@ -2,6 +2,8 @@ import { Navigate, Outlet, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRoles } from "@/hooks/useUserRoles";
 
+const ADMIN_EMAIL = "divinetonyezimchukwu@gmail.com";
+
 interface ProtectedRouteProps {
   requireRole?: "admin" | "parent" | "student" | "school";
 }
@@ -26,7 +28,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ requireRole }) =
     return <Navigate to={`/auth?redirectTo=${redirectTo}`} replace />;
   }
 
-  if (requireRole && !roles.includes(requireRole as any)) {
+  if (
+    requireRole &&
+    !(
+      roles.includes(requireRole as any) &&
+      (requireRole !== "admin" || user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase())
+    )
+  ) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="max-w-md rounded-3xl border border-border/70 bg-card/90 p-6 text-sm text-muted-foreground shadow-[var(--shadow-soft)]">

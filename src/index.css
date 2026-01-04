@@ -117,9 +117,10 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
-    font-family: var(--font-sans);
-  }
+     @apply bg-background text-foreground antialiased;
+     font-family: var(--font-sans);
+     font-size: 0.9rem;
+   }
 
   h1,
   h2,
