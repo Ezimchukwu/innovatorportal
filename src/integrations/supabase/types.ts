@@ -423,7 +423,7 @@ export type Database = {
     }
     Enums: {
       announcement_target: "all" | "students" | "parents" | "schools"
-      app_role: "admin" | "school" | "parent" | "student"
+      app_role: "admin" | "school" | "parent" | "student" | "super_admin"
       approval_status: "pending" | "approved" | "rejected"
       media_type:
         | "web_app"
@@ -563,7 +563,7 @@ export const Constants = {
   public: {
     Enums: {
       announcement_target: ["all", "students", "parents", "schools"],
-      app_role: ["admin", "school", "parent", "student"],
+      app_role: ["admin", "school", "parent", "student", "super_admin"],
       approval_status: ["pending", "approved", "rejected"],
       media_type: [
         "web_app",
