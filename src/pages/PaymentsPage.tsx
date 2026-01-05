@@ -10,7 +10,7 @@ const ENROLLMENT_AMOUNT_NGN = 30000; // displayed amount
 const ENROLLMENT_AMOUNT_KOBO = ENROLLMENT_AMOUNT_NGN * 100; // Paystack uses kobo
 
 export const PaymentsPage = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { toast } = useToast();
   const [email, setEmail] = useState<string>(user?.email ?? "");
   const [loading, setLoading] = useState(false);
@@ -18,7 +18,20 @@ export const PaymentsPage = () => {
   const handleStartPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !email.includes("@")) {
-      toast({ title: "Enter a valid email", description: "We need a valid parent email for the receipt.", variant: "destructive" });
+      toast({
+        title: "Enter a valid email",
+        description: "We need a valid parent email for the receipt.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!session?.access_token) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in before starting a payment.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -26,13 +39,16 @@ export const PaymentsPage = () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paystack-init`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email,
-            amount: ENROLLMENT_AMOUNT_KOBO,
-            callback_url: `${window.location.origin}/payments/success`,
-          }),
-        });
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          email,
+          amount: ENROLLMENT_AMOUNT_KOBO,
+          callback_url: `${window.location.origin}/payments/success`,
+        }),
+      });
 
       const data = await res.json();
       if (!res.ok || !data.authorization_url) {
@@ -94,10 +110,10 @@ export const PaymentsPage = () => {
 
             <div className="flex items-center justify-between rounded-2xl bg-muted/60 px-4 py-3 text-xs text-muted-foreground">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-                  Enrollment fee
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Enrollment fee</p>
+                <p className="mt-1 text-sm font-semibold text-foreground">
+                  NGN {ENROLLMENT_AMOUNT_NGN.toLocaleString()}
                 </p>
-                <p className="mt-1 text-sm font-semibold text-foreground">NGN {ENROLLMENT_AMOUNT_NGN.toLocaleString()}</p>
               </div>
               <p className="max-w-[55%] text-[11px]">
                 Covers program access, dashboards for parents &amp; schools, and project tracking.
