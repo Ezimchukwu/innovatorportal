@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { PublicGalleryPage } from "./pages/PublicGalleryPage";
@@ -16,6 +16,9 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import PaymentsPage from "@/pages/PaymentsPage";
 import PaymentSuccessPage from "@/pages/PaymentSuccessPage";
+import { SuperAdminGuard } from "@/components/SuperAdminGuard";
+import { AdminLoginPage } from "@/pages/admin/AdminLoginPage";
+import UnauthorizedPage from "@/pages/UnauthorizedPage";
 
 const queryClient = new QueryClient();
 
@@ -43,9 +46,13 @@ const App = () => (
               <Route element={<ProtectedRoute requireRole="school" />}>
                 <Route path="/school" element={<SchoolDashboardPage />} />
               </Route>
-              <Route element={<ProtectedRoute requireRole="admin" />}>
-                <Route path="/admin" element={<AdminDashboardPage />} />
+
+              <Route path="/admin/login" element={<AdminLoginPage />} />
+              <Route path="/admin" element={<SuperAdminGuard />}>
+                <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                <Route path="dashboard" element={<AdminDashboardPage />} />
               </Route>
+              <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
