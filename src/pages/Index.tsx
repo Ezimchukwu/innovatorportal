@@ -28,6 +28,7 @@ const fetchFeaturedProjects = async (): Promise<ProjectSummary[]> => {
     .eq("visibility", "public")
     .eq("approved_by_admin", true)
     .eq("is_public_gallery", true)
+    .eq("is_featured_homepage", true)
     .order("created_at", { ascending: false })
     .limit(6);
 
