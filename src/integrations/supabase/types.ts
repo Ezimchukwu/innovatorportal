@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_action_logs: {
+        Row: {
+          action: string
+          admin_user_id: string
+          created_at: string
+          details: Json | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+        }
+        Insert: {
+          action: string
+          admin_user_id: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+        }
+        Update: {
+          action?: string
+          admin_user_id?: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           body: string | null
@@ -261,6 +291,8 @@ export type Database = {
           description: string | null
           external_url: string | null
           id: string
+          is_featured_homepage: boolean
+          is_platform_showcase: boolean
           is_public_gallery: boolean
           is_school_gallery: boolean
           media_type: Database["public"]["Enums"]["media_type"]
@@ -269,6 +301,8 @@ export type Database = {
           thumbnail_url: string | null
           title: string
           updated_at: string
+          uploaded_by_role: Database["public"]["Enums"]["app_role"] | null
+          uploaded_by_user_id: string | null
           visibility: Database["public"]["Enums"]["project_visibility"]
         }
         Insert: {
@@ -278,6 +312,8 @@ export type Database = {
           description?: string | null
           external_url?: string | null
           id?: string
+          is_featured_homepage?: boolean
+          is_platform_showcase?: boolean
           is_public_gallery?: boolean
           is_school_gallery?: boolean
           media_type?: Database["public"]["Enums"]["media_type"]
@@ -286,6 +322,8 @@ export type Database = {
           thumbnail_url?: string | null
           title: string
           updated_at?: string
+          uploaded_by_role?: Database["public"]["Enums"]["app_role"] | null
+          uploaded_by_user_id?: string | null
           visibility?: Database["public"]["Enums"]["project_visibility"]
         }
         Update: {
@@ -295,6 +333,8 @@ export type Database = {
           description?: string | null
           external_url?: string | null
           id?: string
+          is_featured_homepage?: boolean
+          is_platform_showcase?: boolean
           is_public_gallery?: boolean
           is_school_gallery?: boolean
           media_type?: Database["public"]["Enums"]["media_type"]
@@ -303,6 +343,8 @@ export type Database = {
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
+          uploaded_by_role?: Database["public"]["Enums"]["app_role"] | null
+          uploaded_by_user_id?: string | null
           visibility?: Database["public"]["Enums"]["project_visibility"]
         }
         Relationships: [
