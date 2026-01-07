@@ -212,6 +212,7 @@ export const AdminDashboardPage = () => {
   const [creatingAnnouncement, setCreatingAnnouncement] = useState(false);
   const [processingApprovalId, setProcessingApprovalId] = useState<string | null>(null);
   const [processingPaymentId, setProcessingPaymentId] = useState<string | null>(null);
+  const [processingProjectId, setProcessingProjectId] = useState<string | null>(null);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["admin-dashboard"],
@@ -355,6 +356,34 @@ export const AdminDashboardPage = () => {
       await queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
     } finally {
       setProcessingPaymentId(null);
+    }
+  };
+
+  const handleUpdateProject = async (project: ProjectRow, updates: Partial<ProjectRow>) => {
+    setProcessingProjectId(project.id);
+    try {
+      const { error: updateError } = await supabase
+        .from("projects")
+        .update(updates)
+        .eq("id", project.id);
+
+      if (updateError) {
+        toast({
+          title: "Could not update project",
+          description: updateError.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Project updated",
+        description: "Project flags were updated successfully.",
+      });
+
+      await queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
+    } finally {
+      setProcessingProjectId(null);
     }
   };
 
