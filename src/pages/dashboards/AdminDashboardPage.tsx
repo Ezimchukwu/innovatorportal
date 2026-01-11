@@ -213,10 +213,41 @@ export const AdminDashboardPage = () => {
   const [processingApprovalId, setProcessingApprovalId] = useState<string | null>(null);
   const [processingPaymentId, setProcessingPaymentId] = useState<string | null>(null);
   const [processingProjectId, setProcessingProjectId] = useState<string | null>(null);
+  const [projectDialogOpen, setProjectDialogOpen] = useState(false);
+  const [creatingProject, setCreatingProject] = useState(false);
+  const [projectErrors, setProjectErrors] = useState<{
+    title?: string;
+    mediaType?: string;
+  }>({});
+  const [projectForm, setProjectForm] = useState({
+    title: "",
+    description: "",
+    mediaType: "web_app" as ProjectRow["media_type"],
+    externalUrl: "",
+    thumbnailUrl: "",
+    studentId: "" as string | "",
+    isPublicGallery: true,
+    isFeaturedHomepage: true,
+    isPlatformShowcase: false,
+  });
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["admin-dashboard"],
     queryFn: fetchAdminDashboard,
+  });
+
+  const { data: allStudents } = useQuery({
+    queryKey: ["admin-dashboard-students"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("students")
+        .select("id, full_name, school_id, batch")
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+      return data as Pick<StudentRow, "id" | "full_name" | "school_id" | "batch">[];
+    },
   });
 
   const counts = data?.counts;
@@ -674,182 +705,489 @@ export const AdminDashboardPage = () => {
               </TabsContent>
 
               <TabsContent value="projects" className="mt-4">
-                <Card className="rounded-3xl border-border/70 bg-card shadow-[var(--shadow-soft)]">
-                  <CardHeader className="p-4 pb-3">
-                    <CardTitle className="text-sm font-semibold tracking-tight">Recent projects</CardTitle>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Spot-check what learners and schools are recording, and confirm which projects are in the public
-                      gallery pipeline.
-                    </p>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    {data?.recentProjects.length ? (
-                      <ScrollArea className="max-h-[420px]">
-                        <Table className="min-w-full text-xs">
-                           <TableHeader>
-                             <TableRow>
-                               <TableHead>Title</TableHead>
-                               <TableHead>Visibility</TableHead>
-                               <TableHead>Gallery flags</TableHead>
-                               <TableHead>Featuring</TableHead>
-                               <TableHead>Approved</TableHead>
-                               <TableHead>Created at</TableHead>
-                               <TableHead className="text-right">Actions</TableHead>
-                             </TableRow>
-                           </TableHeader>
-                           <TableBody>
-                             {data.recentProjects.map((project) => (
-                               <TableRow key={project.id}>
-                                 <TableCell className="font-medium text-foreground">{project.title}</TableCell>
-                                 <TableCell className="text-[11px] capitalize text-muted-foreground">
-                                   {project.visibility}
-                                 </TableCell>
-                                 <TableCell className="text-[11px] text-muted-foreground">
-                                   <div className="flex flex-wrap gap-1.5">
-                                     <Badge
-                                       variant={project.is_public_gallery ? "secondary" : "outline"}
-                                       className="text-[10px]"
-                                     >
-                                       Public gallery
-                                     </Badge>
-                                     <Badge
-                                       variant={project.is_school_gallery ? "secondary" : "outline"}
-                                       className="text-[10px]"
-                                     >
-                                       School gallery
-                                     </Badge>
-                                   </div>
-                                 </TableCell>
-                                 <TableCell className="text-[11px] text-muted-foreground">
-                                   <div className="flex flex-wrap gap-1.5">
-                                     <Badge
-                                       variant={project.is_featured_homepage ? "secondary" : "outline"}
-                                       className="text-[10px]"
-                                     >
-                                       Featured home
-                                     </Badge>
-                                     <Badge
-                                       variant={project.is_platform_showcase ? "secondary" : "outline"}
-                                       className="text-[10px]"
-                                     >
-                                       Platform showcase
-                                     </Badge>
-                                   </div>
-                                 </TableCell>
-                                 <TableCell className="text-[11px]">
-                                   {project.approved_by_admin ? (
-                                     <Badge variant="secondary" className="text-[10px]">
-                                       Approved
-                                     </Badge>
-                                   ) : (
-                                     <span className="text-muted-foreground">Pending</span>
-                                   )}
-                                 </TableCell>
-                                 <TableCell className="text-[11px] text-muted-foreground">
-                                   {formatDate(project.created_at)}
-                                 </TableCell>
-                                 <TableCell className="text-right">
-                                   <div className="flex flex-wrap justify-end gap-1.5">
-                                     <Button
-                                       size="sm"
-                                       variant={project.approved_by_admin ? "outline" : "secondary"}
-                                       disabled={processingProjectId === project.id}
-                                       onClick={() =>
-                                         void handleUpdateProject(project, {
-                                           approved_by_admin: !project.approved_by_admin,
-                                         })
-                                       }
-                                       className="h-7 px-2 text-[10px]"
-                                     >
-                                       {processingProjectId === project.id
-                                         ? "Saving..."
-                                         : project.approved_by_admin
-                                           ? "Unapprove"
-                                           : "Approve"}
-                                     </Button>
-                                     <Button
-                                       size="sm"
-                                       variant={project.is_public_gallery ? "outline" : "ghost"}
-                                       disabled={processingProjectId === project.id}
-                                       onClick={() =>
-                                         void handleUpdateProject(project, {
-                                           is_public_gallery: !project.is_public_gallery,
-                                           ...(project.is_public_gallery
-                                             ? {}
-                                             : { visibility: "public" as ProjectRow["visibility"] }),
-                                         })
-                                       }
-                                       className="h-7 px-2 text-[10px]"
-                                     >
-                                       {processingProjectId === project.id
-                                         ? "Saving..."
-                                         : project.is_public_gallery
-                                           ? "Remove public"
-                                           : "Make public"}
-                                     </Button>
-                                     <Button
-                                       size="sm"
-                                       variant={project.is_school_gallery ? "outline" : "ghost"}
-                                       disabled={processingProjectId === project.id}
-                                       onClick={() =>
-                                         void handleUpdateProject(project, {
-                                           is_school_gallery: !project.is_school_gallery,
-                                         })
-                                       }
-                                       className="h-7 px-2 text-[10px]"
-                                     >
-                                       {processingProjectId === project.id
-                                         ? "Saving..."
-                                         : project.is_school_gallery
-                                           ? "Remove school"
-                                           : "School gallery"}
-                                     </Button>
-                                     <Button
-                                       size="sm"
-                                       variant={project.is_featured_homepage ? "outline" : "ghost"}
-                                       disabled={processingProjectId === project.id}
-                                       onClick={() =>
-                                         void handleUpdateProject(project, {
-                                           is_featured_homepage: !project.is_featured_homepage,
-                                         })
-                                       }
-                                       className="h-7 px-2 text-[10px]"
-                                     >
-                                       {processingProjectId === project.id
-                                         ? "Saving..."
-                                         : project.is_featured_homepage
-                                           ? "Unfeature home"
-                                           : "Feature home"}
-                                     </Button>
-                                     <Button
-                                       size="sm"
-                                       variant={project.is_platform_showcase ? "outline" : "ghost"}
-                                       disabled={processingProjectId === project.id}
-                                       onClick={() =>
-                                         void handleUpdateProject(project, {
-                                           is_platform_showcase: !project.is_platform_showcase,
-                                         })
-                                       }
-                                       className="h-7 px-2 text-[10px]"
-                                     >
-                                       {processingProjectId === project.id
-                                         ? "Saving..."
-                                         : project.is_platform_showcase
-                                           ? "Unmark showcase"
-                                           : "Mark showcase"}
-                                     </Button>
-                                   </div>
-                                 </TableCell>
-                               </TableRow>
-                             ))}
-                           </TableBody>
-                         </Table>
-                      </ScrollArea>
-                    ) : (
-                      <div className="p-6 text-xs text-muted-foreground">No projects have been logged yet.</div>
-                    )}
-                  </CardContent>
-                </Card>
+                <Dialog open={projectDialogOpen} onOpenChange={setProjectDialogOpen}>
+                  <Card className="rounded-3xl border-border/70 bg-card shadow-[var(--shadow-soft)]">
+                    <CardHeader className="flex items-center justify-between gap-3 p-4 pb-3">
+                      <div>
+                        <CardTitle className="text-sm font-semibold tracking-tight">Recent projects</CardTitle>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Spot-check what learners and schools are recording, and confirm which projects are in the public
+                          gallery pipeline.
+                        </p>
+                      </div>
+                      <DialogTrigger asChild>
+                        <Button size="sm" className="text-[11px]">
+                          Upload project
+                        </Button>
+                      </DialogTrigger>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      {data?.recentProjects.length ? (
+                        <ScrollArea className="max-h-[420px]">
+                          <Table className="min-w-full text-xs">
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Title</TableHead>
+                                <TableHead>Visibility</TableHead>
+                                <TableHead>Gallery flags</TableHead>
+                                <TableHead>Featuring</TableHead>
+                                <TableHead>Approved</TableHead>
+                                <TableHead>Created at</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {data.recentProjects.map((project) => (
+                                <TableRow key={project.id}>
+                                  <TableCell className="font-medium text-foreground">{project.title}</TableCell>
+                                  <TableCell className="text-[11px] capitalize text-muted-foreground">
+                                    {project.visibility}
+                                  </TableCell>
+                                  <TableCell className="text-[11px] text-muted-foreground">
+                                    <div className="flex flex-wrap gap-1.5">
+                                      <Badge
+                                        variant={project.is_public_gallery ? "secondary" : "outline"}
+                                        className="text-[10px]"
+                                      >
+                                        Public gallery
+                                      </Badge>
+                                      <Badge
+                                        variant={project.is_school_gallery ? "secondary" : "outline"}
+                                        className="text-[10px]"
+                                      >
+                                        School gallery
+                                      </Badge>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-[11px] text-muted-foreground">
+                                    <div className="flex flex-wrap gap-1.5">
+                                      <Badge
+                                        variant={project.is_featured_homepage ? "secondary" : "outline"}
+                                        className="text-[10px]"
+                                      >
+                                        Featured home
+                                      </Badge>
+                                      <Badge
+                                        variant={project.is_platform_showcase ? "secondary" : "outline"}
+                                        className="text-[10px]"
+                                      >
+                                        Platform showcase
+                                      </Badge>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-[11px]">
+                                    {project.approved_by_admin ? (
+                                      <Badge variant="secondary" className="text-[10px]">
+                                        Approved
+                                      </Badge>
+                                    ) : (
+                                      <span className="text-muted-foreground">Pending</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-[11px] text-muted-foreground">
+                                    {formatDate(project.created_at)}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex flex-wrap justify-end gap-1.5">
+                                      <Button
+                                        size="sm"
+                                        variant={project.approved_by_admin ? "outline" : "secondary"}
+                                        disabled={processingProjectId === project.id}
+                                        onClick={() =>
+                                          void handleUpdateProject(project, {
+                                            approved_by_admin: !project.approved_by_admin,
+                                          })
+                                        }
+                                        className="h-7 px-2 text-[10px]"
+                                      >
+                                        {processingProjectId === project.id
+                                          ? "Saving..."
+                                          : project.approved_by_admin
+                                            ? "Unapprove"
+                                            : "Approve"}
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant={project.is_public_gallery ? "outline" : "ghost"}
+                                        disabled={processingProjectId === project.id}
+                                        onClick={() =>
+                                          void handleUpdateProject(project, {
+                                            is_public_gallery: !project.is_public_gallery,
+                                            ...(project.is_public_gallery
+                                              ? {}
+                                              : { visibility: "public" as ProjectRow["visibility"] }),
+                                          })
+                                        }
+                                        className="h-7 px-2 text-[10px]"
+                                      >
+                                        {processingProjectId === project.id
+                                          ? "Saving..."
+                                          : project.is_public_gallery
+                                            ? "Remove public"
+                                            : "Make public"}
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant={project.is_school_gallery ? "outline" : "ghost"}
+                                        disabled={processingProjectId === project.id}
+                                        onClick={() =>
+                                          void handleUpdateProject(project, {
+                                            is_school_gallery: !project.is_school_gallery,
+                                          })
+                                        }
+                                        className="h-7 px-2 text-[10px]"
+                                      >
+                                        {processingProjectId === project.id
+                                          ? "Saving..."
+                                          : project.is_school_gallery
+                                            ? "Remove school"
+                                            : "School gallery"}
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant={project.is_featured_homepage ? "outline" : "ghost"}
+                                        disabled={processingProjectId === project.id}
+                                        onClick={() =>
+                                          void handleUpdateProject(project, {
+                                            is_featured_homepage: !project.is_featured_homepage,
+                                          })
+                                        }
+                                        className="h-7 px-2 text-[10px]"
+                                      >
+                                        {processingProjectId === project.id
+                                          ? "Saving..."
+                                          : project.is_featured_homepage
+                                            ? "Unfeature home"
+                                            : "Feature home"}
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant={project.is_platform_showcase ? "outline" : "ghost"}
+                                        disabled={processingProjectId === project.id}
+                                        onClick={() =>
+                                          void handleUpdateProject(project, {
+                                            is_platform_showcase: !project.is_platform_showcase,
+                                          })
+                                        }
+                                        className="h-7 px-2 text-[10px]"
+                                      >
+                                        {processingProjectId === project.id
+                                          ? "Saving..."
+                                          : project.is_platform_showcase
+                                            ? "Unmark showcase"
+                                            : "Mark showcase"}
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </ScrollArea>
+                      ) : (
+                        <div className="flex flex-col items-start gap-3 p-6 text-xs text-muted-foreground">
+                          <p>No projects have been logged yet.</p>
+                          <p>
+                            Start by uploading a first featured project. This will feed the homepage gallery and the public
+                            proof section.
+                          </p>
+                          <DialogTrigger asChild>
+                            <Button size="sm" className="text-[11px]">
+                              Upload first project
+                            </Button>
+                          </DialogTrigger>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle className="text-sm">Upload project</DialogTitle>
+                    </DialogHeader>
+                    <div className="mt-2 space-y-3 text-xs">
+                      <div className="space-y-1.5">
+                        <label htmlFor="project-title" className="text-[11px] font-medium text-foreground">
+                          Project title
+                        </label>
+                        <Input
+                          id="project-title"
+                          value={projectForm.title}
+                          onChange={(e) => {
+                            setProjectForm((prev) => ({ ...prev, title: e.target.value }));
+                            setProjectErrors((prev) => ({ ...prev, title: undefined }));
+                          }}
+                          disabled={creatingProject}
+                          placeholder="e.g. AI-powered waste sorting app"
+                        />
+                        {projectErrors.title && (
+                          <p className="text-[11px] text-destructive">{projectErrors.title}</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label htmlFor="project-description" className="text-[11px] font-medium text-foreground">
+                          Description
+                        </label>
+                        <Textarea
+                          id="project-description"
+                          value={projectForm.description}
+                          onChange={(e) =>
+                            setProjectForm((prev) => ({ ...prev, description: e.target.value }))
+                          }
+                          disabled={creatingProject}
+                          rows={4}
+                          placeholder="Short explanation of what the learner built and why it matters."
+                        />
+                      </div>
+
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="space-y-1.5">
+                          <span className="text-[11px] font-medium text-foreground">Project type</span>
+                          <div className="flex flex-wrap gap-2">
+                            {Constants.public.Enums.media_type.map((type) => (
+                              <button
+                                key={type}
+                                type="button"
+                                onClick={() => {
+                                  setProjectForm((prev) => ({ ...prev, mediaType: type as ProjectRow["media_type"] }));
+                                  setProjectErrors((prev) => ({ ...prev, mediaType: undefined }));
+                                }}
+                                className={`rounded-full border px-3 py-1 text-[11px] transition-colors ${
+                                  projectForm.mediaType === type
+                                    ? "border-primary bg-primary text-primary-foreground"
+                                    : "border-border bg-background text-muted-foreground hover:bg-muted"
+                                }`}
+                              >
+                                {type.replace("_", " ")}
+                              </button>
+                            ))}
+                          </div>
+                          {projectErrors.mediaType && (
+                            <p className="text-[11px] text-destructive">{projectErrors.mediaType}</p>
+                          )}
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label htmlFor="project-student" className="text-[11px] font-medium text-foreground">
+                            Assign to student (optional)
+                          </label>
+                          <select
+                            id="project-student"
+                            value={projectForm.studentId}
+                            onChange={(e) =>
+                              setProjectForm((prev) => ({ ...prev, studentId: e.target.value || "" }))
+                            }
+                            disabled={creatingProject}
+                            className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          >
+                            <option value="">No specific student (platform showcase)</option>
+                            {allStudents?.map((student) => (
+                              <option key={student.id} value={student.id}>
+                                {student.full_name}
+                                {student.batch ? ` • ${student.batch}` : ""}
+                              </option>
+                            ))}
+                          </select>
+                          <p className="text-[10px] text-muted-foreground">
+                            If left blank, this will be treated as a platform-level showcase project.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label htmlFor="project-external" className="text-[11px] font-medium text-foreground">
+                          External link (live demo, video or repo)
+                        </label>
+                        <Input
+                          id="project-external"
+                          value={projectForm.externalUrl}
+                          onChange={(e) =>
+                            setProjectForm((prev) => ({ ...prev, externalUrl: e.target.value }))
+                          }
+                          disabled={creatingProject}
+                          placeholder="https://..."
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label htmlFor="project-thumbnail" className="text-[11px] font-medium text-foreground">
+                          Thumbnail image URL
+                        </label>
+                        <Input
+                          id="project-thumbnail"
+                          value={projectForm.thumbnailUrl}
+                          onChange={(e) =>
+                            setProjectForm((prev) => ({ ...prev, thumbnailUrl: e.target.value }))
+                          }
+                          disabled={creatingProject}
+                          placeholder="https://..."
+                        />
+                        <p className="text-[10px] text-muted-foreground">
+                          Use a square or 16:9 image that represents the project well.
+                        </p>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <span className="text-[11px] font-medium text-foreground">Visibility</span>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setProjectForm((prev) => ({
+                                ...prev,
+                                isPublicGallery: !prev.isPublicGallery,
+                              }))
+                            }
+                            className={`rounded-full border px-3 py-1 text-[11px] transition-colors ${
+                              projectForm.isPublicGallery
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-border bg-background text-muted-foreground hover:bg-muted"
+                            }`}
+                          >
+                            Public gallery
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setProjectForm((prev) => ({
+                                ...prev,
+                                isFeaturedHomepage: !prev.isFeaturedHomepage,
+                              }))
+                            }
+                            className={`rounded-full border px-3 py-1 text-[11px] transition-colors ${
+                              projectForm.isFeaturedHomepage
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-border bg-background text-muted-foreground hover:bg-muted"
+                            }`}
+                          >
+                            Feature on homepage
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setProjectForm((prev) => ({
+                                ...prev,
+                                isPlatformShowcase: !prev.isPlatformShowcase,
+                              }))
+                            }
+                            className={`rounded-full border px-3 py-1 text-[11px] transition-colors ${
+                              projectForm.isPlatformShowcase
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-border bg-background text-muted-foreground hover:bg-muted"
+                            }`}
+                          >
+                            Mark as platform showcase
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">
+                          Projects shown publicly will always be marked as approved and visible, but you stay in full
+                          control.
+                        </p>
+                      </div>
+
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="text-[11px]"
+                          disabled={creatingProject}
+                          onClick={() => setProjectDialogOpen(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="text-[11px]"
+                          disabled={creatingProject}
+                          onClick={async () => {
+                            if (!user) return;
+
+                            const errors: typeof projectErrors = {};
+                            if (!projectForm.title.trim()) {
+                              errors.title = "Title is required";
+                            }
+                            if (!projectForm.mediaType) {
+                              errors.mediaType = "Choose a project type";
+                            }
+
+                            if (Object.keys(errors).length) {
+                              setProjectErrors(errors);
+                              return;
+                            }
+
+                            setCreatingProject(true);
+                            try {
+                              const assignedStudent =
+                                projectForm.studentId && allStudents
+                                  ? allStudents.find((s) => s.id === projectForm.studentId)
+                                  : undefined;
+
+                              const visibility: ProjectRow["visibility"] =
+                                projectForm.isPublicGallery || projectForm.isFeaturedHomepage
+                                  ? "public"
+                                  : "private";
+
+                              const { error: insertError } = await supabase.from("projects").insert({
+                                title: projectForm.title.trim(),
+                                description: projectForm.description.trim() || null,
+                                media_type: projectForm.mediaType,
+                                visibility,
+                                is_public_gallery: projectForm.isPublicGallery,
+                                is_featured_homepage: projectForm.isFeaturedHomepage,
+                                is_platform_showcase: projectForm.isPlatformShowcase,
+                                student_id: assignedStudent?.id ?? null,
+                                school_id: assignedStudent?.school_id ?? null,
+                                cohort: assignedStudent?.batch ?? null,
+                                external_url: projectForm.externalUrl.trim() || null,
+                                thumbnail_url: projectForm.thumbnailUrl.trim() || null,
+                                uploaded_by_user_id: user.id,
+                                uploaded_by_role: "super_admin" as ProjectRow["uploaded_by_role"],
+                                approved_by_admin: true,
+                              });
+
+                              if (insertError) {
+                                toast({
+                                  title: "Could not upload project",
+                                  description: insertError.message,
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+
+                              toast({
+                                title: "Project uploaded",
+                                description:
+                                  "The project has been added. It will now appear in the homepage gallery and public projects where applicable.",
+                              });
+
+                              setProjectForm({
+                                title: "",
+                                description: "",
+                                mediaType: "web_app" as ProjectRow["media_type"],
+                                externalUrl: "",
+                                thumbnailUrl: "",
+                                studentId: "",
+                                isPublicGallery: true,
+                                isFeaturedHomepage: true,
+                                isPlatformShowcase: false,
+                              });
+                              setProjectErrors({});
+                              setProjectDialogOpen(false);
+                              await queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
+                            } finally {
+                              setCreatingProject(false);
+                            }
+                          }}
+                        >
+                          {creatingProject ? "Uploading..." : "Save project"}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </TabsContent>
 
               <TabsContent value="payments" className="mt-4">
