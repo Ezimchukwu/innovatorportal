@@ -686,42 +686,164 @@ export const AdminDashboardPage = () => {
                     {data?.recentProjects.length ? (
                       <ScrollArea className="max-h-[420px]">
                         <Table className="min-w-full text-xs">
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Title</TableHead>
-                              <TableHead>Visibility</TableHead>
-                              <TableHead>Gallery flags</TableHead>
-                              <TableHead>Approved</TableHead>
-                              <TableHead>Created at</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {data.recentProjects.map((project) => (
-                              <TableRow key={project.id}>
-                                <TableCell className="font-medium text-foreground">{project.title}</TableCell>
-                                <TableCell className="text-[11px] capitalize text-muted-foreground">
-                                  {project.visibility}
-                                </TableCell>
-                                <TableCell className="text-[11px] text-muted-foreground">
-                                  {project.is_public_gallery ? "Public" : "—"}/{" "}
-                                  {project.is_school_gallery ? "School" : "—"}
-                                </TableCell>
-                                <TableCell className="text-[11px]">
-                                  {project.approved_by_admin ? (
-                                    <Badge variant="secondary" className="text-[10px]">
-                                      Approved
-                                    </Badge>
-                                  ) : (
-                                    <span className="text-muted-foreground">Pending</span>
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-[11px] text-muted-foreground">
-                                  {formatDate(project.created_at)}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
+                           <TableHeader>
+                             <TableRow>
+                               <TableHead>Title</TableHead>
+                               <TableHead>Visibility</TableHead>
+                               <TableHead>Gallery flags</TableHead>
+                               <TableHead>Featuring</TableHead>
+                               <TableHead>Approved</TableHead>
+                               <TableHead>Created at</TableHead>
+                               <TableHead className="text-right">Actions</TableHead>
+                             </TableRow>
+                           </TableHeader>
+                           <TableBody>
+                             {data.recentProjects.map((project) => (
+                               <TableRow key={project.id}>
+                                 <TableCell className="font-medium text-foreground">{project.title}</TableCell>
+                                 <TableCell className="text-[11px] capitalize text-muted-foreground">
+                                   {project.visibility}
+                                 </TableCell>
+                                 <TableCell className="text-[11px] text-muted-foreground">
+                                   <div className="flex flex-wrap gap-1.5">
+                                     <Badge
+                                       variant={project.is_public_gallery ? "secondary" : "outline"}
+                                       className="text-[10px]"
+                                     >
+                                       Public gallery
+                                     </Badge>
+                                     <Badge
+                                       variant={project.is_school_gallery ? "secondary" : "outline"}
+                                       className="text-[10px]"
+                                     >
+                                       School gallery
+                                     </Badge>
+                                   </div>
+                                 </TableCell>
+                                 <TableCell className="text-[11px] text-muted-foreground">
+                                   <div className="flex flex-wrap gap-1.5">
+                                     <Badge
+                                       variant={project.is_featured_homepage ? "secondary" : "outline"}
+                                       className="text-[10px]"
+                                     >
+                                       Featured home
+                                     </Badge>
+                                     <Badge
+                                       variant={project.is_platform_showcase ? "secondary" : "outline"}
+                                       className="text-[10px]"
+                                     >
+                                       Platform showcase
+                                     </Badge>
+                                   </div>
+                                 </TableCell>
+                                 <TableCell className="text-[11px]">
+                                   {project.approved_by_admin ? (
+                                     <Badge variant="secondary" className="text-[10px]">
+                                       Approved
+                                     </Badge>
+                                   ) : (
+                                     <span className="text-muted-foreground">Pending</span>
+                                   )}
+                                 </TableCell>
+                                 <TableCell className="text-[11px] text-muted-foreground">
+                                   {formatDate(project.created_at)}
+                                 </TableCell>
+                                 <TableCell className="text-right">
+                                   <div className="flex flex-wrap justify-end gap-1.5">
+                                     <Button
+                                       size="sm"
+                                       variant={project.approved_by_admin ? "outline" : "secondary"}
+                                       disabled={processingProjectId === project.id}
+                                       onClick={() =>
+                                         void handleUpdateProject(project, {
+                                           approved_by_admin: !project.approved_by_admin,
+                                         })
+                                       }
+                                       className="h-7 px-2 text-[10px]"
+                                     >
+                                       {processingProjectId === project.id
+                                         ? "Saving..."
+                                         : project.approved_by_admin
+                                           ? "Unapprove"
+                                           : "Approve"}
+                                     </Button>
+                                     <Button
+                                       size="sm"
+                                       variant={project.is_public_gallery ? "outline" : "ghost"}
+                                       disabled={processingProjectId === project.id}
+                                       onClick={() =>
+                                         void handleUpdateProject(project, {
+                                           is_public_gallery: !project.is_public_gallery,
+                                           ...(project.is_public_gallery
+                                             ? {}
+                                             : { visibility: "public" as ProjectRow["visibility"] }),
+                                         })
+                                       }
+                                       className="h-7 px-2 text-[10px]"
+                                     >
+                                       {processingProjectId === project.id
+                                         ? "Saving..."
+                                         : project.is_public_gallery
+                                           ? "Remove public"
+                                           : "Make public"}
+                                     </Button>
+                                     <Button
+                                       size="sm"
+                                       variant={project.is_school_gallery ? "outline" : "ghost"}
+                                       disabled={processingProjectId === project.id}
+                                       onClick={() =>
+                                         void handleUpdateProject(project, {
+                                           is_school_gallery: !project.is_school_gallery,
+                                         })
+                                       }
+                                       className="h-7 px-2 text-[10px]"
+                                     >
+                                       {processingProjectId === project.id
+                                         ? "Saving..."
+                                         : project.is_school_gallery
+                                           ? "Remove school"
+                                           : "School gallery"}
+                                     </Button>
+                                     <Button
+                                       size="sm"
+                                       variant={project.is_featured_homepage ? "outline" : "ghost"}
+                                       disabled={processingProjectId === project.id}
+                                       onClick={() =>
+                                         void handleUpdateProject(project, {
+                                           is_featured_homepage: !project.is_featured_homepage,
+                                         })
+                                       }
+                                       className="h-7 px-2 text-[10px]"
+                                     >
+                                       {processingProjectId === project.id
+                                         ? "Saving..."
+                                         : project.is_featured_homepage
+                                           ? "Unfeature home"
+                                           : "Feature home"}
+                                     </Button>
+                                     <Button
+                                       size="sm"
+                                       variant={project.is_platform_showcase ? "outline" : "ghost"}
+                                       disabled={processingProjectId === project.id}
+                                       onClick={() =>
+                                         void handleUpdateProject(project, {
+                                           is_platform_showcase: !project.is_platform_showcase,
+                                         })
+                                       }
+                                       className="h-7 px-2 text-[10px]"
+                                     >
+                                       {processingProjectId === project.id
+                                         ? "Saving..."
+                                         : project.is_platform_showcase
+                                           ? "Unmark showcase"
+                                           : "Mark showcase"}
+                                     </Button>
+                                   </div>
+                                 </TableCell>
+                               </TableRow>
+                             ))}
+                           </TableBody>
+                         </Table>
                       </ScrollArea>
                     ) : (
                       <div className="p-6 text-xs text-muted-foreground">No projects have been logged yet.</div>
