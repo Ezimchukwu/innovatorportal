@@ -219,12 +219,24 @@ export const AdminDashboardPage = () => {
     title?: string;
     mediaType?: string;
   }>({});
-  const [projectForm, setProjectForm] = useState({
+  const [projectForm, setProjectForm] = useState<{
+    title: string;
+    description: string;
+    mediaType: ProjectRow["media_type"];
+    externalUrl: string;
+    thumbnailUrl: string;
+    thumbnailFile: File | null;
+    studentId: string | "";
+    isPublicGallery: boolean;
+    isFeaturedHomepage: boolean;
+    isPlatformShowcase: boolean;
+  }>({
     title: "",
     description: "",
     mediaType: "web_app" as ProjectRow["media_type"],
     externalUrl: "",
     thumbnailUrl: "",
+    thumbnailFile: null,
     studentId: "" as string | "",
     isPublicGallery: true,
     isFeaturedHomepage: true,
@@ -1012,19 +1024,20 @@ export const AdminDashboardPage = () => {
 
                       <div className="space-y-1.5">
                         <label htmlFor="project-thumbnail" className="text-[11px] font-medium text-foreground">
-                          Thumbnail image URL
+                          Thumbnail image
                         </label>
                         <Input
                           id="project-thumbnail"
-                          value={projectForm.thumbnailUrl}
-                          onChange={(e) =>
-                            setProjectForm((prev) => ({ ...prev, thumbnailUrl: e.target.value }))
-                          }
+                          type="file"
+                          accept="image/*"
                           disabled={creatingProject}
-                          placeholder="https://..."
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] ?? null;
+                            setProjectForm((prev) => ({ ...prev, thumbnailFile: file }));
+                          }}
                         />
                         <p className="text-[10px] text-muted-foreground">
-                          Use a square or 16:9 image that represents the project well.
+                          Upload a clear PNG or JPG. This will be used in the homepage and public gallery.
                         </p>
                       </div>
 
@@ -1130,6 +1143,33 @@ export const AdminDashboardPage = () => {
                                   ? "public"
                                   : "private";
 
+                              let thumbnailUrl: string | null = null;
+                              if (projectForm.thumbnailFile) {
+                                const file = projectForm.thumbnailFile;
+                                const filePath = `${user.id}/${Date.now()}-${file.name}`;
+
+                                const { error: uploadError } = await supabase.storage
+                                  .from("project-thumbnails")
+                                  .upload(filePath, file, {
+                                    cacheControl: "3600",
+                                    upsert: false,
+                                  });
+
+                                if (uploadError) {
+                                  toast({
+                                    title: "Could not upload image",
+                                    description: uploadError.message,
+                                    variant: "destructive",
+                                  });
+                                  return;
+                                }
+
+                                const { data: publicUrlData } = supabase.storage
+                                  .from("project-thumbnails")
+                                  .getPublicUrl(filePath);
+                                thumbnailUrl = publicUrlData?.publicUrl ?? null;
+                              }
+
                               const { error: insertError } = await supabase.from("projects").insert({
                                 title: projectForm.title.trim(),
                                 description: projectForm.description.trim() || null,
@@ -1142,7 +1182,7 @@ export const AdminDashboardPage = () => {
                                 school_id: assignedStudent?.school_id ?? null,
                                 cohort: assignedStudent?.batch ?? null,
                                 external_url: projectForm.externalUrl.trim() || null,
-                                thumbnail_url: projectForm.thumbnailUrl.trim() || null,
+                                thumbnail_url: thumbnailUrl,
                                 uploaded_by_user_id: user.id,
                                 uploaded_by_role: "super_admin" as ProjectRow["uploaded_by_role"],
                                 approved_by_admin: true,
@@ -1169,6 +1209,7 @@ export const AdminDashboardPage = () => {
                                 mediaType: "web_app" as ProjectRow["media_type"],
                                 externalUrl: "",
                                 thumbnailUrl: "",
+                                thumbnailFile: null,
                                 studentId: "",
                                 isPublicGallery: true,
                                 isFeaturedHomepage: true,
