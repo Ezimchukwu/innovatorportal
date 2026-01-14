@@ -18,11 +18,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 type StudentRow = Tables<"students">;
 type ProjectRow = Tables<"projects">;
 type AssignmentRow = Tables<"assignments">;
+type AnnouncementRow = Tables<"announcements">;
 
 interface StudentDashboardData {
   student: StudentRow | null;
   projects: ProjectRow[];
   assignments: AssignmentRow[];
+  announcements: AnnouncementRow[];
 }
 
 const projectSchema = z.object({
@@ -68,30 +70,41 @@ const fetchStudentDashboard = async (userId: string): Promise<StudentDashboardDa
   if (studentError) throw studentError;
 
   if (!student) {
-    return { student: null, projects: [], assignments: [] };
+    return { student: null, projects: [], assignments: [], announcements: [] };
   }
 
-  const [{ data: projects, error: projectsError }, { data: assignments, error: assignmentsError }] =
-    await Promise.all([
-      supabase
-        .from("projects")
-        .select("*")
-        .eq("student_id", student.id)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("assignments")
-        .select("*")
-        .eq("student_id", student.id)
-        .order("created_at", { ascending: false }),
-    ]);
+  const [
+    { data: projects, error: projectsError },
+    { data: assignments, error: assignmentsError },
+    { data: announcements, error: announcementsError },
+  ] = await Promise.all([
+    supabase
+      .from("projects")
+      .select("*")
+      .eq("student_id", student.id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("assignments")
+      .select("*")
+      .eq("student_id", student.id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("announcements")
+      .select("*")
+      .in("target", ["all", "students"])
+      .order("created_at", { ascending: false })
+      .limit(10),
+  ]);
 
   if (projectsError) throw projectsError;
   if (assignmentsError) throw assignmentsError;
+  if (announcementsError) throw announcementsError;
 
   return {
     student,
     projects: projects ?? [],
     assignments: assignments ?? [],
+    announcements: announcements ?? [],
   };
 };
 
@@ -124,6 +137,7 @@ export const StudentDashboardPage = () => {
   const student = data?.student ?? null;
   const projects = data?.projects ?? [];
   const assignments = data?.assignments ?? [];
+  const announcements = data?.announcements ?? [];
 
   const handleProjectChange = (field: keyof z.infer<typeof projectSchema>, value: unknown) => {
     setProjectValues((prev) => ({ ...prev, [field]: value } as any));
@@ -219,6 +233,22 @@ export const StudentDashboardPage = () => {
             school or public galleries.
           </p>
         </header>
+
+        {!isLoading && !isError && announcements.length > 0 && (
+          <section className="mb-5 rounded-3xl border border-border/70 bg-card p-4 text-xs text-muted-foreground">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-foreground/80">
+              Announcements
+            </p>
+            <ul className="mt-2 space-y-2">
+              {announcements.slice(0, 4).map((a) => (
+                <li key={a.id} className="rounded-2xl bg-muted/60 p-3">
+                  <p className="text-[12px] font-medium text-foreground">{a.title}</p>
+                  {a.body && <p className="mt-1 text-[11px] text-muted-foreground">{a.body}</p>}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {isLoading && (
           <div className="flex items-center justify-center py-10 text-sm text-muted-foreground">

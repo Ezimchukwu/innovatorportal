@@ -18,11 +18,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 type SchoolRow = Tables<"schools">;
 type StudentRow = Tables<"students">;
 type ProjectRow = Tables<"projects">;
+type AnnouncementRow = Tables<"announcements">;
 
 interface SchoolDashboardData {
   school: SchoolRow | null;
   students: StudentRow[];
   projectsByStudent: Record<string, ProjectRow[]>;
+  announcements: AnnouncementRow[];
 }
 
 const schoolProjectSchema = z.object({
@@ -69,10 +71,14 @@ const fetchSchoolDashboard = async (userId: string): Promise<SchoolDashboardData
   if (schoolError) throw schoolError;
 
   if (!school) {
-    return { school: null, students: [], projectsByStudent: {} };
+    return { school: null, students: [], projectsByStudent: {}, announcements: [] };
   }
 
-  const [{ data: students, error: studentsError }, { data: projects, error: projectsError }] = await Promise.all([
+  const [
+    { data: students, error: studentsError },
+    { data: projects, error: projectsError },
+    { data: announcements, error: announcementsError },
+  ] = await Promise.all([
     supabase
       .from("students")
       .select("*")
@@ -83,10 +89,17 @@ const fetchSchoolDashboard = async (userId: string): Promise<SchoolDashboardData
       .select("*")
       .eq("school_id", school.id)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("announcements")
+      .select("*")
+      .in("target", ["all", "schools"])
+      .order("created_at", { ascending: false })
+      .limit(10),
   ]);
 
   if (studentsError) throw studentsError;
   if (projectsError) throw projectsError;
+  if (announcementsError) throw announcementsError;
 
   const projectsByStudent: Record<string, ProjectRow[]> = {};
   (projects ?? []).forEach((project) => {
@@ -100,6 +113,7 @@ const fetchSchoolDashboard = async (userId: string): Promise<SchoolDashboardData
     school,
     students: students ?? [],
     projectsByStudent,
+    announcements: announcements ?? [],
   };
 };
 
@@ -131,6 +145,7 @@ export const SchoolDashboardPage = () => {
   const school = data?.school ?? null;
   const students = data?.students ?? [];
   const projectsByStudent = data?.projectsByStudent ?? {};
+  const announcements = data?.announcements ?? [];
 
   const handleChange = (field: keyof z.infer<typeof schoolProjectSchema>, value: unknown) => {
     setValues((prev) => ({ ...prev, [field]: value } as any));
@@ -227,6 +242,22 @@ export const SchoolDashboardPage = () => {
             galleries.
           </p>
         </header>
+
+        {!isLoading && !isError && announcements.length > 0 && (
+          <section className="mb-5 rounded-3xl border border-border/70 bg-card p-4 text-xs text-muted-foreground">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-foreground/80">
+              Announcements
+            </p>
+            <ul className="mt-2 space-y-2">
+              {announcements.slice(0, 4).map((a) => (
+                <li key={a.id} className="rounded-2xl bg-muted/60 p-3">
+                  <p className="text-[12px] font-medium text-foreground">{a.title}</p>
+                  {a.body && <p className="mt-1 text-[11px] text-muted-foreground">{a.body}</p>}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {isLoading && (
           <div className="flex items-center justify-center py-10 text-sm text-muted-foreground">

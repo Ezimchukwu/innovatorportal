@@ -16,6 +16,7 @@ type StudentRow = Tables<"students">;
 type ProjectRow = Tables<"projects">;
 type AssignmentRow = Tables<"assignments">;
 type PaymentRow = Tables<"payments">;
+type AnnouncementRow = Tables<"announcements">;
 
 type DashboardData = {
   parent: ParentRow | null;
@@ -23,6 +24,7 @@ type DashboardData = {
   projectsByStudent: Record<string, ProjectRow[]>;
   assignmentsByStudent: Record<string, AssignmentRow[]>;
   payments: PaymentRow[];
+  announcements: AnnouncementRow[];
 };
 
 const childSetupSchema = z.object({
@@ -65,6 +67,7 @@ const fetchParentDashboard = async (userId: string): Promise<DashboardData> => {
       projectsByStudent: {},
       assignmentsByStudent: {},
       payments: [],
+      announcements: [],
     };
   }
 
@@ -137,12 +140,22 @@ const fetchParentDashboard = async (userId: string): Promise<DashboardData> => {
 
   if (paymentsError) throw paymentsError;
 
+  const { data: announcements, error: announcementsError } = await supabase
+    .from("announcements")
+    .select("*")
+    .in("target", ["all", "parents"])
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  if (announcementsError) throw announcementsError;
+
   return {
     parent,
     students,
     projectsByStudent,
     assignmentsByStudent,
     payments: payments ?? [],
+    announcements: announcements ?? [],
   };
 };
 
@@ -176,6 +189,7 @@ export const ParentDashboardPage = () => {
   const parent = data?.parent ?? null;
   const students = data?.students ?? [];
   const payments = data?.payments ?? [];
+  const announcements = data?.announcements ?? [];
   const latestPayment = payments[0];
 
   const handleChildChange = (
@@ -308,6 +322,22 @@ export const ParentDashboardPage = () => {
             everyone, but this space is private to you.
           </p>
         </header>
+
+        {!isLoading && !isError && announcements.length > 0 && (
+          <section className="mb-5 rounded-3xl border border-border/70 bg-card p-4 text-xs text-muted-foreground">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-foreground/80">
+              Announcements
+            </p>
+            <ul className="mt-2 space-y-2">
+              {announcements.slice(0, 4).map((a) => (
+                <li key={a.id} className="rounded-2xl bg-muted/60 p-3">
+                  <p className="text-[12px] font-medium text-foreground">{a.title}</p>
+                  {a.body && <p className="mt-1 text-[11px] text-muted-foreground">{a.body}</p>}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {isLoading && (
           <div className="flex items-center justify-center py-10 text-sm text-muted-foreground">
