@@ -218,7 +218,6 @@ export const AdminDashboardPage = () => {
   const [projectErrors, setProjectErrors] = useState<{
     title?: string;
     mediaType?: string;
-    studentId?: string;
   }>({});
   const [projectForm, setProjectForm] = useState<{
     title: string;
@@ -983,7 +982,7 @@ export const AdminDashboardPage = () => {
 
                         <div className="space-y-1.5">
                           <label htmlFor="project-student" className="text-[11px] font-medium text-foreground">
-                            Assign to learner
+                            Assign to learner (optional)
                           </label>
                           <select
                             id="project-student"
@@ -994,7 +993,7 @@ export const AdminDashboardPage = () => {
                             disabled={creatingProject}
                             className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                           >
-                            <option value="">Select learner...</option>
+                            <option value="">No specific learner (platform showcase)</option>
                             {allStudents?.map((student) => (
                               <option key={student.id} value={student.id}>
                                 {student.full_name}
@@ -1002,12 +1001,8 @@ export const AdminDashboardPage = () => {
                               </option>
                             ))}
                           </select>
-                          {projectErrors.studentId && (
-                            <p className="text-[11px] text-destructive">{projectErrors.studentId}</p>
-                          )}
                           <p className="text-[10px] text-muted-foreground">
-                            Required – this links the project to a specific learner so it appears correctly in dashboards
-                            and public galleries.
+                            Optional – link this project to a specific learner to show it on their dashboard.
                           </p>
                         </div>
                       </div>
@@ -1129,9 +1124,6 @@ export const AdminDashboardPage = () => {
                             }
                             if (!projectForm.mediaType) {
                               errors.mediaType = "Choose a project type";
-                            }
-                            if (!projectForm.studentId) {
-                              errors.studentId = "Select a learner to attach this project to";
                             }
 
                             if (Object.keys(errors).length) {
