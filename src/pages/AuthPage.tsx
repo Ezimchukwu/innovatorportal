@@ -27,11 +27,13 @@ const ADMIN_EMAIL = "divinetonyezimchukwu@gmail.com";
 type SelectableRole = Extract<AppRole, "student" | "parent" | "school">;
 
 export const AuthPage = () => {
-  const [mode, setMode] = useState<"login" | "signup" | "forgot">("login");
+  const [mode, setMode] = useState<"login" | "signup" | "forgot" | "reset">("login");
   const [values, setValues] = useState<AuthFormValues>({ email: "", password: "" });
   const [errors, setErrors] = useState<Partial<Record<keyof AuthFormValues, string>>>({});
   const [loading, setLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState<SelectableRole | null>(null);
+  const [resetValues, setResetValues] = useState({ password: "", confirmPassword: "" });
+  const [resetError, setResetError] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -40,6 +42,43 @@ export const AuthPage = () => {
 
   const { user } = useAuth();
   const { roles, isLoading: rolesLoading } = useUserRoles();
+
+  // If we came back from a password recovery email link, complete the session and show the reset form.
+  useEffect(() => {
+    if (!isResetFlow) return;
+
+    setMode("reset");
+    setResetError(null);
+
+    const completeRecovery = async () => {
+      try {
+        const code = searchParams.get("code");
+
+        // PKCE flow (most common)
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+          return;
+        }
+
+        // Legacy implicit flow (access_token in hash)
+        const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : window.location.hash;
+        const params = new URLSearchParams(hash);
+        const access_token = params.get("access_token");
+        const refresh_token = params.get("refresh_token");
+        const type = params.get("type");
+
+        if (type === "recovery" && access_token && refresh_token) {
+          const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+          if (error) throw error;
+        }
+      } catch (err: any) {
+        setResetError(err?.message ?? "Reset link is invalid or expired. Please request a new one.");
+      }
+    };
+
+    void completeRecovery();
+  }, [isResetFlow, searchParams]);
 
   // When a logged-in user already has a role, redirect them away from /auth
   useEffect(() => {
@@ -60,13 +99,21 @@ export const AuthPage = () => {
     setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
+  const handleResetChange = (field: "password" | "confirmPassword", value: string) => {
+    setResetValues((prev) => ({ ...prev, [field]: value }));
+    setResetError(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (mode === "forgot") {
       const emailResult = authSchema.shape.email.safeParse(values.email);
       if (!emailResult.success) {
-        setErrors((prev) => ({ ...prev, email: emailResult.error.issues[0]?.message ?? "Enter a valid email" }));
+        setErrors((prev) => ({
+          ...prev,
+          email: emailResult.error.issues[0]?.message ?? "Enter a valid email",
+        }));
         return;
       }
 
@@ -90,6 +137,42 @@ export const AuthPage = () => {
           title: "Check your email",
           description: "We sent you a secure link to reset your password.",
         });
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    if (mode === "reset") {
+      const password = resetValues.password.trim();
+      const confirmPassword = resetValues.confirmPassword.trim();
+
+      if (password.length < 6) {
+        setResetError("Password must be at least 6 characters.");
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        setResetError("Passwords do not match.");
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) throw error;
+
+        toast({
+          title: "Password updated",
+          description: "You can now sign in with your new password.",
+        });
+
+        // Clean up reset params/hash so we don't re-trigger reset flow.
+        window.history.replaceState({}, "", "/auth");
+        setMode("login");
+        setResetValues({ password: "", confirmPassword: "" });
+      } catch (err: any) {
+        setResetError(err?.message ?? "Could not update password. Please request a new reset link.");
       } finally {
         setLoading(false);
       }
@@ -156,26 +239,26 @@ export const AuthPage = () => {
             .from("user_roles")
             .select("id, role")
             .eq("user_id", signedInUser.id);
- 
-           if (!fetchError) {
-             const alreadyHasRole = existingRoles?.some((r) => r.role === selectedRole);
-             if (!alreadyHasRole) {
-               const { error: insertError } = await supabase.from("user_roles").insert({
-                 user_id: signedInUser.id,
-                 role: selectedRole,
-               });
- 
-               if (insertError) {
-                 toast({
-                   title: "Could not set role",
-                   description: insertError.message,
-                   variant: "destructive",
-                 });
-                 return;
-               }
-             }
-           }
-         }
+
+          if (!fetchError) {
+            const alreadyHasRole = existingRoles?.some((r) => r.role === selectedRole);
+            if (!alreadyHasRole) {
+              const { error: insertError } = await supabase.from("user_roles").insert({
+                user_id: signedInUser.id,
+                role: selectedRole,
+              });
+
+              if (insertError) {
+                toast({
+                  title: "Could not set role",
+                  description: insertError.message,
+                  variant: "destructive",
+                });
+                return;
+              }
+            }
+          }
+        }
 
         toast({
           title: "Welcome back",
@@ -224,7 +307,8 @@ export const AuthPage = () => {
     }
   };
 
-  const title = mode === "login" ? "Sign in" : mode === "signup" ? "Create an account" : "Forgot password";
+  const title =
+    mode === "login" ? "Sign in" : mode === "signup" ? "Create an account" : mode === "forgot" ? "Forgot password" : "Reset password";
 
   const renderRolePicker = () => {
     if (mode !== "login") return null;
@@ -260,7 +344,7 @@ export const AuthPage = () => {
               type="button"
               onClick={() => setSelectedRole(role.value)}
               className={
-                "flex flex-col items-start gap-1 rounded-2xl border px-3 py-2 text-left text-xs transition-colors " +
+                "flex flex-col items-start gap-1 rounded-2xl border px-3 py-2 text-left text-xs transition-colors hover-scale " +
                 (selectedRole === role.value
                   ? "border-primary bg-primary/5 text-foreground"
                   : "border-border/70 bg-card/80 text-muted-foreground hover:border-accent hover:bg-card")
@@ -290,7 +374,7 @@ export const AuthPage = () => {
             <button
               type="button"
               onClick={() => navigate(-1)}
-              className="text-[11px] font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              className="text-[11px] font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline hover-scale"
             >
               ← Back
             </button>
@@ -302,114 +386,161 @@ export const AuthPage = () => {
             </div>
           </div>
 
-          <p className="text-xs text-muted-foreground">
-            Use a single account to access student, parent or school dashboards after approval.
-          </p>
+          {mode !== "reset" ? (
+            <p className="text-xs text-muted-foreground">
+              Use a single account to access student, parent or school dashboards after approval.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Enter a new password to finish resetting your account. If your link expired, request a new one.
+            </p>
+          )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="email">Email address</Label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                value={values.email}
-                onChange={(e) => handleChange("email", e.target.value)}
-                required
-                disabled={loading}
-              />
-              {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
-            </div>
+          {mode !== "reset" ? (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="email">Email address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  value={values.email}
+                  onChange={(e) => handleChange("email", e.target.value)}
+                  required
+                  disabled={loading}
+                />
+                {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+              </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete={mode === "login" ? "current-password" : "new-password"}
-                value={values.password}
-                onChange={(e) => handleChange("password", e.target.value)}
-                required={mode !== "forgot"}
-                disabled={mode === "forgot"}
-              />
-              {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
-              {mode === "login" && (
-                <button
-                  type="button"
-                  onClick={() => setMode("forgot")}
-                  className="mt-1 text-[11px] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-                >
-                  Forgot password?
-                </button>
-              )}
-            </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete={mode === "login" ? "current-password" : "new-password"}
+                  value={values.password}
+                  onChange={(e) => handleChange("password", e.target.value)}
+                  required={mode !== "forgot"}
+                  disabled={mode === "forgot"}
+                />
+                {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
+                {mode === "login" && (
+                  <button
+                    type="button"
+                    onClick={() => setMode("forgot")}
+                    className="mt-1 text-[11px] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline hover-scale"
+                  >
+                    Forgot password?
+                  </button>
+                )}
+              </div>
 
-            {mode === "login" && renderRolePicker()}
+              {mode === "login" && renderRolePicker()}
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading
-                ? mode === "forgot"
-                  ? "Sending reset link..."
-                  : mode === "login"
-                    ? "Signing in..."
-                    : "Creating account..."
-                : mode === "forgot"
-                  ? "Send reset link"
-                  : mode === "login"
-                    ? "Sign in"
-                    : "Create account"}
-            </Button>
-          </form>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading
+                  ? mode === "forgot"
+                    ? "Sending reset link..."
+                    : mode === "login"
+                      ? "Signing in..."
+                      : "Creating account..."
+                  : mode === "forgot"
+                    ? "Send reset link"
+                    : mode === "login"
+                      ? "Sign in"
+                      : "Create account"}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="new-password">New password</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  autoComplete="new-password"
+                  value={resetValues.password}
+                  onChange={(e) => handleResetChange("password", e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="confirm-password">Confirm password</Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  autoComplete="new-password"
+                  value={resetValues.confirmPassword}
+                  onChange={(e) => handleResetChange("confirmPassword", e.target.value)}
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              {resetError && <p className="text-xs text-destructive">{resetError}</p>}
+
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Updating password..." : "Update password"}
+              </Button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  window.history.replaceState({}, "", "/auth");
+                  setMode("login");
+                }}
+                className="w-full text-center text-[11px] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline hover-scale"
+              >
+                Back to sign in
+              </button>
+            </form>
+          )}
 
           <div className="flex flex-col gap-2 text-center text-xs text-muted-foreground">
             {mode === "login" && (
-              <>
-                <span>
-                  Don&apos;t have an account?{" "}
-                  <button
-                    type="button"
-                    onClick={() => setMode("signup")}
-                    className="font-medium text-primary underline-offset-4 hover:underline"
-                  >
-                    Create one
-                  </button>
-                </span>
-              </>
+              <span>
+                Don&apos;t have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => setMode("signup")}
+                  className="font-medium text-primary underline-offset-4 hover:underline hover-scale"
+                >
+                  Create one
+                </button>
+              </span>
             )}
             {mode === "signup" && (
-              <>
-                <span>
-                  Already registered?{" "}
-                  <button
-                    type="button"
-                    onClick={() => setMode("login")}
-                    className="font-medium text-primary underline-offset-4 hover:underline"
-                  >
-                    Sign in
-                  </button>
-                </span>
-              </>
+              <span>
+                Already registered?{" "}
+                <button
+                  type="button"
+                  onClick={() => setMode("login")}
+                  className="font-medium text-primary underline-offset-4 hover:underline hover-scale"
+                >
+                  Sign in
+                </button>
+              </span>
             )}
             {mode === "forgot" && (
-              <>
-                <span>
-                  Remembered your password?{" "}
-                  <button
-                    type="button"
-                    onClick={() => setMode("login")}
-                    className="font-medium text-primary underline-offset-4 hover:underline"
-                  >
-                    Back to sign in
-                  </button>
-                </span>
-              </>
+              <span>
+                Remembered your password?{" "}
+                <button
+                  type="button"
+                  onClick={() => setMode("login")}
+                  className="font-medium text-primary underline-offset-4 hover:underline hover-scale"
+                >
+                  Back to sign in
+                </button>
+              </span>
             )}
             <p>
               Public projects remain visible without login. Private dashboards will only unlock once your role and payment are
               approved.
             </p>
             <p>
-              <Link to="/" className="text-primary underline-offset-4 hover:underline">
+              <Link to="/" className="text-primary underline-offset-4 hover:underline hover-scale">
                 ← Back to home
               </Link>
             </p>
