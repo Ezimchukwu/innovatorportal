@@ -3,6 +3,7 @@ import { MainNavbar } from "@/components/MainNavbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -10,18 +11,18 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, Enums } from "@/integrations/supabase/types";
 import { Constants } from "@/integrations/supabase/types";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 
 type ApprovalRow = Tables<"approvals">;
-type UserRoleRow = Tables<"user_roles">;
 type PaymentRow = Tables<"payments">;
 type ProjectRow = Tables<"projects">;
 type AnnouncementRow = Tables<"announcements">;
@@ -68,6 +69,34 @@ const announcementSchema = z.object({
     .min(10, { message: "Body should give a bit more context" })
     .max(2000, { message: "Body must be under 2000 characters" }),
   target: z.custom<AnnouncementTarget>().default("all" as AnnouncementTarget),
+});
+
+const createStudentSchema = z.object({
+  full_name: z.string().trim().min(2, { message: "Student name is required" }).max(120),
+  class_level: z.string().trim().max(60).optional().or(z.literal("")),
+  batch: z.string().trim().max(60).optional().or(z.literal("")),
+  gender: z.string().trim().max(30).optional().or(z.literal("")),
+  age: z
+    .string()
+    .trim()
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? Number(v) : null))
+    .refine((v) => v == null || (Number.isInteger(v) && v >= 2 && v <= 30), {
+      message: "Age must be a whole number between 2 and 30",
+    }),
+  school_id: z.string().uuid().optional().or(z.literal("")),
+});
+
+const linkParentStudentSchema = z.object({
+  parent_id: z.string().uuid({ message: "Pick a parent" }),
+  student_id: z.string().uuid({ message: "Pick a student" }),
+  relationship: z.string().trim().max(60).optional().or(z.literal("")),
+});
+
+const assignSchoolSchema = z.object({
+  student_id: z.string().uuid({ message: "Pick a student" }),
+  school_id: z.string().uuid().optional().or(z.literal("")),
 });
 
 const fetchAdminDashboard = async (): Promise<AdminDashboardData> => {
@@ -210,6 +239,41 @@ export const AdminDashboardPage = () => {
     Partial<Record<keyof z.infer<typeof announcementSchema>, string>>
   >({});
   const [creatingAnnouncement, setCreatingAnnouncement] = useState(false);
+
+  const [creatingStudent, setCreatingStudent] = useState(false);
+  const [linkingParentStudent, setLinkingParentStudent] = useState(false);
+  const [assigningSchool, setAssigningSchool] = useState(false);
+
+  const [studentForm, setStudentForm] = useState<{
+    full_name: string;
+    class_level: string;
+    batch: string;
+    gender: string;
+    age: string;
+    school_id: string;
+  }>({
+    full_name: "",
+    class_level: "",
+    batch: "",
+    gender: "",
+    age: "",
+    school_id: "",
+  });
+  const [studentFormError, setStudentFormError] = useState<string | null>(null);
+
+  const [parentStudentForm, setParentStudentForm] = useState<{
+    parent_id: string;
+    student_id: string;
+    relationship: string;
+  }>({ parent_id: "", student_id: "", relationship: "" });
+  const [parentStudentError, setParentStudentError] = useState<string | null>(null);
+
+  const [assignSchoolForm, setAssignSchoolForm] = useState<{ student_id: string; school_id: string }>({
+    student_id: "",
+    school_id: "",
+  });
+  const [assignSchoolError, setAssignSchoolError] = useState<string | null>(null);
+
   const [processingApprovalId, setProcessingApprovalId] = useState<string | null>(null);
   const [processingPaymentId, setProcessingPaymentId] = useState<string | null>(null);
   const [processingProjectId, setProcessingProjectId] = useState<string | null>(null);
@@ -253,20 +317,202 @@ export const AdminDashboardPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("students")
-        .select("id, full_name, school_id, batch")
+        .select("id, full_name, school_id, batch, class_level")
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(200);
 
       if (error) throw error;
-      return data as Pick<StudentRow, "id" | "full_name" | "school_id" | "batch">[];
+      return data as Pick<StudentRow, "id" | "full_name" | "school_id" | "batch" | "class_level">[];
     },
   });
+
+  const { data: allParents } = useQuery({
+    queryKey: ["admin-dashboard-parents"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("parents")
+        .select("id, full_name, email")
+        .order("created_at", { ascending: false })
+        .limit(200);
+
+      if (error) throw error;
+      return data as Pick<ParentRow, "id" | "full_name" | "email">[];
+    },
+  });
+
+  const { data: allSchools } = useQuery({
+    queryKey: ["admin-dashboard-schools"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("schools")
+        .select("id, name, city, country")
+        .order("created_at", { ascending: false })
+        .limit(200);
+
+      if (error) throw error;
+      return data as Pick<SchoolRow, "id" | "name" | "city" | "country">[];
+    },
+  });
+
+  const studentOptions = useMemo(
+    () =>
+      (allStudents ?? []).map((s) => ({
+        value: s.id,
+        label: `${s.full_name}${s.class_level ? ` · ${s.class_level}` : ""}`,
+        keywords: `${s.full_name} ${s.class_level ?? ""} ${s.batch ?? ""}`.trim(),
+      })),
+    [allStudents],
+  );
+
+  const parentOptions = useMemo(
+    () =>
+      (allParents ?? []).map((p) => ({
+        value: p.id,
+        label: `${p.full_name}${p.email ? ` · ${p.email}` : ""}`,
+        keywords: `${p.full_name} ${p.email ?? ""}`.trim(),
+      })),
+    [allParents],
+  );
+
+  const schoolOptions = useMemo(
+    () =>
+      (allSchools ?? []).map((s) => ({
+        value: s.id,
+        label: `${s.name}${s.city ? ` · ${s.city}` : s.country ? ` · ${s.country}` : ""}`,
+        keywords: `${s.name} ${s.city ?? ""} ${s.country ?? ""}`.trim(),
+      })),
+    [allSchools],
+  );
 
   const counts = data?.counts;
 
   const handleAnnouncementChange = (field: keyof z.infer<typeof announcementSchema>, value: unknown) => {
     setAnnouncementValues((prev) => ({ ...prev, [field]: value } as any));
     setAnnouncementErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+
+  const handleCreateStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStudentFormError(null);
+
+    const parsed = createStudentSchema.safeParse(studentForm);
+    if (!parsed.success) {
+      setStudentFormError(parsed.error.issues[0]?.message ?? "Please check the form.");
+      return;
+    }
+
+    setCreatingStudent(true);
+    try {
+      const v = parsed.data;
+      const { error } = await supabase.from("students").insert({
+        full_name: v.full_name,
+        class_level: v.class_level || null,
+        batch: v.batch || null,
+        gender: v.gender || null,
+        age: (v.age as unknown as number | null) ?? null,
+        school_id: v.school_id ? v.school_id : null,
+      });
+
+      if (error) {
+        setStudentFormError(error.message);
+        return;
+      }
+
+      toast({ title: "Student created", description: "You can now link this student to a parent and/or school." });
+      setStudentForm({ full_name: "", class_level: "", batch: "", gender: "", age: "", school_id: "" });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-dashboard-students"] }),
+      ]);
+    } finally {
+      setCreatingStudent(false);
+    }
+  };
+
+  const handleLinkParentToStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setParentStudentError(null);
+
+    const parsed = linkParentStudentSchema.safeParse(parentStudentForm);
+    if (!parsed.success) {
+      setParentStudentError(parsed.error.issues[0]?.message ?? "Please check the form.");
+      return;
+    }
+
+    setLinkingParentStudent(true);
+    try {
+      const v = parsed.data;
+
+      const { data: existing, error: existingError } = await supabase
+        .from("parent_students")
+        .select("id")
+        .eq("parent_id", v.parent_id)
+        .eq("student_id", v.student_id)
+        .maybeSingle();
+
+      if (existingError) {
+        setParentStudentError(existingError.message);
+        return;
+      }
+
+      if (existing) {
+        toast({ title: "Already linked", description: "That parent is already linked to the selected student." });
+        return;
+      }
+
+      const { error } = await supabase.from("parent_students").insert({
+        parent_id: v.parent_id,
+        student_id: v.student_id,
+        relationship: v.relationship || null,
+      });
+
+      if (error) {
+        setParentStudentError(error.message);
+        return;
+      }
+
+      toast({ title: "Linked", description: "Parent and student are now connected." });
+      setParentStudentForm({ parent_id: "", student_id: "", relationship: "" });
+      await queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
+    } finally {
+      setLinkingParentStudent(false);
+    }
+  };
+
+  const handleAssignSchool = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAssignSchoolError(null);
+
+    const parsed = assignSchoolSchema.safeParse(assignSchoolForm);
+    if (!parsed.success) {
+      setAssignSchoolError(parsed.error.issues[0]?.message ?? "Please check the form.");
+      return;
+    }
+
+    setAssigningSchool(true);
+    try {
+      const v = parsed.data;
+      const schoolId = v.school_id ? v.school_id : null;
+
+      const { error } = await supabase.from("students").update({ school_id: schoolId }).eq("id", v.student_id);
+
+      if (error) {
+        setAssignSchoolError(error.message);
+        return;
+      }
+
+      toast({
+        title: "School updated",
+        description: schoolId ? "Student is now assigned to the selected school." : "Student is now independent (no school).",
+      });
+      setAssignSchoolForm({ student_id: "", school_id: "" });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-dashboard-students"] }),
+      ]);
+    } finally {
+      setAssigningSchool(false);
+    }
   };
 
   const handleCreateAnnouncement = async (e: React.FormEvent) => {
@@ -656,64 +902,254 @@ export const AdminDashboardPage = () => {
               </TabsContent>
 
               <TabsContent value="profiles" className="mt-4">
-                <Card className="rounded-3xl border-border/70 bg-card shadow-[var(--shadow-soft)]">
-                  <CardHeader className="p-4 pb-3">
-                    <CardTitle className="text-sm font-semibold tracking-tight">Profiles &amp; linking</CardTitle>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      High-level overview of learners, parents and school accounts to help you confirm that profiles are
-                      being linked correctly during onboarding.
-                    </p>
-                  </CardHeader>
-                  <CardContent className="grid gap-4 p-4 pt-0 md:grid-cols-3">
-                    <div className="rounded-2xl border border-border/70 bg-muted/40 p-3 text-xs">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-foreground/80">
-                        Recent students
+                <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+                  <Card className="rounded-3xl border-border/70 bg-card shadow-[var(--shadow-soft)]">
+                    <CardHeader className="p-4 pb-3">
+                      <CardTitle className="text-sm font-semibold tracking-tight">Profiles &amp; linking</CardTitle>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Create a learner profile, link a learner to a parent, and assign a learner to a school — all from one
+                        place.
                       </p>
-                      <ul className="mt-2 space-y-1.5">
-                        {data?.profileSummary.students.map((student) => (
-                          <li key={student.id} className="flex items-center justify-between gap-2">
-                            <span className="truncate text-foreground">{student.full_name}</span>
-                            <span className="text-[10px] text-muted-foreground">
-                              {student.class_level || "Class ?"}
-                            </span>
-                          </li>
-                        )) || <li className="text-muted-foreground">No students yet.</li>}
-                      </ul>
-                    </div>
+                    </CardHeader>
 
-                    <div className="rounded-2xl border border-border/70 bg-muted/40 p-3 text-xs">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-foreground/80">
-                        Recent parents
-                      </p>
-                      <ul className="mt-2 space-y-1.5">
-                        {data?.profileSummary.parents.map((parent) => (
-                          <li key={parent.id} className="flex items-center justify-between gap-2">
-                            <span className="truncate text-foreground">{parent.full_name}</span>
-                            <span className="text-[10px] text-muted-foreground">
-                              {parent.email || "Email ?"}
-                            </span>
-                          </li>
-                        )) || <li className="text-muted-foreground">No parents yet.</li>}
-                      </ul>
-                    </div>
+                    <CardContent className="grid gap-4 p-4 pt-0 md:grid-cols-3">
+                      <form onSubmit={handleCreateStudent} className="rounded-2xl border border-border/70 bg-muted/40 p-3">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-foreground/80">
+                          Create student
+                        </p>
+                        <div className="mt-3 space-y-3 text-xs">
+                          <div className="space-y-1">
+                            <Label htmlFor="student-full-name">Full name</Label>
+                            <Input
+                              id="student-full-name"
+                              value={studentForm.full_name}
+                              onChange={(e) => setStudentForm((p) => ({ ...p, full_name: e.target.value }))}
+                              placeholder="e.g. Chinedu Okoye"
+                              required
+                            />
+                          </div>
 
-                    <div className="rounded-2xl border border-border/70 bg-muted/40 p-3 text-xs">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-foreground/80">
-                        Recent schools
-                      </p>
-                      <ul className="mt-2 space-y-1.5">
-                        {data?.profileSummary.schools.map((school) => (
-                          <li key={school.id} className="flex items-center justify-between gap-2">
-                            <span className="truncate text-foreground">{school.name}</span>
-                            <span className="text-[10px] text-muted-foreground">
-                              {school.city || school.country || "Location ?"}
-                            </span>
-                          </li>
-                        )) || <li className="text-muted-foreground">No schools yet.</li>}
-                      </ul>
-                    </div>
-                  </CardContent>
-                </Card>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                              <Label htmlFor="student-class">Class</Label>
+                              <Input
+                                id="student-class"
+                                value={studentForm.class_level}
+                                onChange={(e) => setStudentForm((p) => ({ ...p, class_level: e.target.value }))}
+                                placeholder="JSS 2"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label htmlFor="student-batch">Cohort</Label>
+                              <Input
+                                id="student-batch"
+                                value={studentForm.batch}
+                                onChange={(e) => setStudentForm((p) => ({ ...p, batch: e.target.value }))}
+                                placeholder="2026"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                              <Label htmlFor="student-gender">Gender</Label>
+                              <Input
+                                id="student-gender"
+                                value={studentForm.gender}
+                                onChange={(e) => setStudentForm((p) => ({ ...p, gender: e.target.value }))}
+                                placeholder="Female"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label htmlFor="student-age">Age</Label>
+                              <Input
+                                id="student-age"
+                                inputMode="numeric"
+                                value={studentForm.age}
+                                onChange={(e) => setStudentForm((p) => ({ ...p, age: e.target.value }))}
+                                placeholder="12"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <Label>School (optional)</Label>
+                            <Combobox
+                              items={schoolOptions}
+                              value={studentForm.school_id || null}
+                              onValueChange={(value) => setStudentForm((p) => ({ ...p, school_id: value }))}
+                              placeholder={(schoolOptions.length ? "Select school" : "No schools yet") as string}
+                              disabled={!schoolOptions.length}
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-[11px]"
+                              onClick={() => setStudentForm((p) => ({ ...p, school_id: "" }))}
+                              disabled={!studentForm.school_id}
+                            >
+                              Clear school
+                            </Button>
+                          </div>
+
+                          {studentFormError && <p className="text-[11px] text-destructive">{studentFormError}</p>}
+
+                          <Button type="submit" size="sm" className="w-full text-[11px]" disabled={creatingStudent}>
+                            {creatingStudent ? "Creating..." : "Create student"}
+                          </Button>
+                        </div>
+                      </form>
+
+                      <form onSubmit={handleLinkParentToStudent} className="rounded-2xl border border-border/70 bg-muted/40 p-3">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-foreground/80">
+                          Link parent → student
+                        </p>
+                        <div className="mt-3 space-y-3 text-xs">
+                          <div className="space-y-1">
+                            <Label>Parent</Label>
+                            <Combobox
+                              items={parentOptions}
+                              value={parentStudentForm.parent_id || null}
+                              onValueChange={(value) => setParentStudentForm((p) => ({ ...p, parent_id: value }))}
+                              placeholder={(parentOptions.length ? "Select parent" : "No parents yet") as string}
+                              disabled={!parentOptions.length || linkingParentStudent}
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <Label>Student</Label>
+                            <Combobox
+                              items={studentOptions}
+                              value={parentStudentForm.student_id || null}
+                              onValueChange={(value) => setParentStudentForm((p) => ({ ...p, student_id: value }))}
+                              placeholder={(studentOptions.length ? "Select student" : "No students yet") as string}
+                              disabled={!studentOptions.length || linkingParentStudent}
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <Label htmlFor="relationship">Relationship (optional)</Label>
+                            <Input
+                              id="relationship"
+                              value={parentStudentForm.relationship}
+                              onChange={(e) => setParentStudentForm((p) => ({ ...p, relationship: e.target.value }))}
+                              placeholder="e.g. Father, Mother, Guardian"
+                            />
+                          </div>
+
+                          {parentStudentError && <p className="text-[11px] text-destructive">{parentStudentError}</p>}
+
+                          <Button
+                            type="submit"
+                            size="sm"
+                            className="w-full text-[11px]"
+                            disabled={linkingParentStudent}
+                          >
+                            {linkingParentStudent ? "Linking..." : "Link parent"}
+                          </Button>
+                        </div>
+                      </form>
+
+                      <form onSubmit={handleAssignSchool} className="rounded-2xl border border-border/70 bg-muted/40 p-3">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-foreground/80">
+                          Assign student → school
+                        </p>
+                        <div className="mt-3 space-y-3 text-xs">
+                          <div className="space-y-1">
+                            <Label>Student</Label>
+                            <Combobox
+                              items={studentOptions}
+                              value={assignSchoolForm.student_id || null}
+                              onValueChange={(value) => setAssignSchoolForm((p) => ({ ...p, student_id: value }))}
+                              placeholder={(studentOptions.length ? "Select student" : "No students yet") as string}
+                              disabled={!studentOptions.length || assigningSchool}
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <Label>School (optional)</Label>
+                            <Combobox
+                              items={schoolOptions}
+                              value={assignSchoolForm.school_id || null}
+                              onValueChange={(value) => setAssignSchoolForm((p) => ({ ...p, school_id: value }))}
+                              placeholder={(schoolOptions.length ? "Select school" : "No schools yet") as string}
+                              disabled={!schoolOptions.length || assigningSchool}
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-[11px]"
+                              onClick={() => setAssignSchoolForm((p) => ({ ...p, school_id: "" }))}
+                              disabled={!assignSchoolForm.school_id}
+                            >
+                              Clear school
+                            </Button>
+                          </div>
+
+                          {assignSchoolError && <p className="text-[11px] text-destructive">{assignSchoolError}</p>}
+
+                          <Button type="submit" size="sm" className="w-full text-[11px]" disabled={assigningSchool}>
+                            {assigningSchool ? "Saving..." : "Save assignment"}
+                          </Button>
+                        </div>
+                      </form>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="rounded-3xl border-border/70 bg-card shadow-[var(--shadow-soft)]">
+                    <CardHeader className="p-4 pb-3">
+                      <CardTitle className="text-sm font-semibold tracking-tight">Recent profiles</CardTitle>
+                      <p className="mt-1 text-xs text-muted-foreground">Quick sanity-check that new accounts are appearing.</p>
+                    </CardHeader>
+                    <CardContent className="grid gap-4 p-4 pt-0 md:grid-cols-3 lg:grid-cols-1">
+                      <div className="rounded-2xl border border-border/70 bg-muted/40 p-3 text-xs">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-foreground/80">
+                          Recent students
+                        </p>
+                        <ul className="mt-2 space-y-1.5">
+                          {data?.profileSummary.students.map((student) => (
+                            <li key={student.id} className="flex items-center justify-between gap-2">
+                              <span className="truncate text-foreground">{student.full_name}</span>
+                              <span className="text-[10px] text-muted-foreground">{student.class_level || "Class ?"}</span>
+                            </li>
+                          )) || <li className="text-muted-foreground">No students yet.</li>}
+                        </ul>
+                      </div>
+
+                      <div className="rounded-2xl border border-border/70 bg-muted/40 p-3 text-xs">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-foreground/80">
+                          Recent parents
+                        </p>
+                        <ul className="mt-2 space-y-1.5">
+                          {data?.profileSummary.parents.map((parent) => (
+                            <li key={parent.id} className="flex items-center justify-between gap-2">
+                              <span className="truncate text-foreground">{parent.full_name}</span>
+                              <span className="text-[10px] text-muted-foreground">{parent.email || "Email ?"}</span>
+                            </li>
+                          )) || <li className="text-muted-foreground">No parents yet.</li>}
+                        </ul>
+                      </div>
+
+                      <div className="rounded-2xl border border-border/70 bg-muted/40 p-3 text-xs">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-foreground/80">
+                          Recent schools
+                        </p>
+                        <ul className="mt-2 space-y-1.5">
+                          {data?.profileSummary.schools.map((school) => (
+                            <li key={school.id} className="flex items-center justify-between gap-2">
+                              <span className="truncate text-foreground">{school.name}</span>
+                              <span className="text-[10px] text-muted-foreground">
+                                {school.city || school.country || "Location ?"}
+                              </span>
+                            </li>
+                          )) || <li className="text-muted-foreground">No schools yet.</li>}
+                        </ul>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               </TabsContent>
 
               <TabsContent value="projects" className="mt-4">
