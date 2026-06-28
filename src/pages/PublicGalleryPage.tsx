@@ -1,11 +1,14 @@
 import { Seo } from "@/components/Seo";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { MainNavbar } from "@/components/MainNavbar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { X, ZoomIn } from "lucide-react";
 
 type ProjectRow = Tables<"projects">;
 
@@ -37,6 +40,10 @@ export const PublicGalleryPage = () => {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [schoolFilter, setSchoolFilter] = useState<string>("all");
   const [cohortFilter, setCohortFilter] = useState<string>("all");
+
+  // Modal state for viewing images/designs
+  const [selectedProject, setSelectedProject] = useState<ProjectRow | null>(null);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
 
   const mediaTypes = ["all", ...Array.from(new Set((projects ?? []).map((p) => p.media_type)))];
   const cohorts = ["all", ...Array.from(new Set((projects ?? []).map((p) => p.cohort).filter(Boolean)))] as string[];
@@ -183,12 +190,24 @@ export const PublicGalleryPage = () => {
                     <Button
                       asChild
                       size="sm"
-                      variant="ghost"
-                      className="px-2 text-[11px] story-link"
+                      variant="outline"
+                      className="h-7 px-3 text-[11px] font-medium border-green-500/40 text-green-600 hover:bg-green-500 hover:text-white transition-all duration-200"
                     >
                       <a href={project.external_url} target="_blank" rel="noreferrer">
-                        View project
+                        🌐 View project ↗
                       </a>
+                    </Button>
+                  ) : project.media_type === "design" || project.media_type === "image" ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-3 text-[11px] font-medium border-purple-500/40 text-purple-600 hover:bg-purple-500 hover:text-white transition-all duration-200"
+                      onClick={() => {
+                        setSelectedProject(project);
+                        setImageModalOpen(true);
+                      }}
+                    >
+                      👁️ View {project.media_type === "design" ? "Design" : "Image"}
                     </Button>
                   ) : (
                     <span className="text-[11px] text-muted-foreground/80">Linked project coming soon</span>
@@ -230,6 +249,90 @@ export const PublicGalleryPage = () => {
           </div>
         </section>
       </main>
+
+      {/* Image/Design Modal */}
+      <Dialog open={imageModalOpen} onOpenChange={setImageModalOpen}>
+        <DialogContent className="max-w-4xl w-full h-auto max-h-[90vh] p-0">
+          <DialogHeader className="p-4 pb-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="text-lg font-semibold flex items-center gap-2">
+                  <ZoomIn className="h-5 w-5" />
+                  {selectedProject?.title}
+                </DialogTitle>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant="secondary" className="text-xs">
+                    {selectedProject?.media_type?.replace("_", " ")?.toUpperCase()}
+                  </Badge>
+                  {selectedProject?.cohort && (
+                    <span className="text-sm text-muted-foreground">
+                      Cohort: {selectedProject.cohort}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setImageModalOpen(false)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </DialogHeader>
+
+          <div className="px-4 pb-4">
+            {selectedProject?.description && (
+              <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                {selectedProject.description}
+              </p>
+            )}
+
+            <div className="bg-muted/30 rounded-lg p-4 border">
+              {selectedProject?.thumbnail_url ? (
+                <div className="flex flex-col items-center">
+                  <img
+                    src={selectedProject.thumbnail_url}
+                    alt={selectedProject.title}
+                    className="max-w-full max-h-[60vh] object-contain rounded-lg shadow-lg"
+                    loading="lazy"
+                  />
+                  <div className="mt-3 text-center">
+                    <p className="text-xs text-muted-foreground">
+                      {selectedProject.media_type === "design"
+                        ? "🎨 Design Project - Click outside to close"
+                        : "🖼️ Image Project - Click outside to close"}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-4xl mb-2">🎨</div>
+                  <p className="text-muted-foreground">
+                    {selectedProject?.media_type === "design"
+                      ? "Design project preview not available"
+                      : "Image preview not available"}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    The full {selectedProject?.media_type} would be displayed here in production.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end mt-4">
+              <Button
+                variant="outline"
+                onClick={() => setImageModalOpen(false)}
+                className="text-xs"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

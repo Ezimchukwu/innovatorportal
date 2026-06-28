@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRoles } from "@/hooks/useUserRoles";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, Enums } from "@/integrations/supabase/types";
 import { Constants } from "@/integrations/supabase/types";
@@ -72,6 +73,7 @@ const announcementSchema = z.object({
 });
 
 const createStudentSchema = z.object({
+  user_id: z.string().trim().min(1, { message: "User ID is required" }),
   full_name: z.string().trim().min(2, { message: "Student name is required" }).max(120),
   class_level: z.string().trim().max(60).optional().or(z.literal("")),
   batch: z.string().trim().max(60).optional().or(z.literal("")),
@@ -163,17 +165,17 @@ const fetchAdminDashboard = async (): Promise<AdminDashboardData> => {
       .from("students")
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(10),
+      .limit(5),
     supabase
       .from("parents")
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(10),
+      .limit(5),
     supabase
       .from("schools")
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(10),
+      .limit(5),
   ]);
 
   const anyError =
@@ -227,8 +229,17 @@ const fetchAdminDashboard = async (): Promise<AdminDashboardData> => {
 export const AdminDashboardPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { roles } = useUserRoles();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const isSuperAdmin = roles?.includes("admin") || roles?.includes("super_admin") ||
+                        user?.email?.toLowerCase() === "divinetonyezimchukwu@gmail.com";
+
+  // Debug logging for roles
+  console.log("User roles:", roles);
+  console.log("Is super admin:", isSuperAdmin);
+  console.log("Current user:", { id: user?.id, email: user?.email });
 
   const [announcementValues, setAnnouncementValues] = useState<z.infer<typeof announcementSchema>>({
     title: "",
@@ -245,6 +256,7 @@ export const AdminDashboardPage = () => {
   const [assigningSchool, setAssigningSchool] = useState(false);
 
   const [studentForm, setStudentForm] = useState<{
+    user_id: string;
     full_name: string;
     class_level: string;
     batch: string;
@@ -252,6 +264,7 @@ export const AdminDashboardPage = () => {
     age: string;
     school_id: string;
   }>({
+    user_id: "",
     full_name: "",
     class_level: "",
     batch: "",
@@ -354,6 +367,37 @@ export const AdminDashboardPage = () => {
     },
   });
 
+  // Get available students for parent linking (students not already linked to the selected parent)
+  const { data: availableStudentsForParent } = useQuery({
+    queryKey: ["admin-dashboard-available-students", parentStudentForm.parent_id],
+    queryFn: async () => {
+      if (!parentStudentForm.parent_id) return [];
+
+      // Get all students
+      const { data: allStudents, error: studentsError } = await supabase
+        .from("students")
+        .select("id, full_name, class_level, batch")
+        .order("created_at", { ascending: false });
+
+      if (studentsError) throw studentsError;
+
+      // Get students already linked to this parent
+      const { data: linkedStudents, error: linksError } = await supabase
+        .from("parent_students")
+        .select("student_id")
+        .eq("parent_id", parentStudentForm.parent_id);
+
+      if (linksError) throw linksError;
+
+      const linkedStudentIds = new Set(linkedStudents?.map(link => link.student_id) || []);
+
+      // Filter out already linked students
+      return allStudents?.filter(student => !linkedStudentIds.has(student.id)) || [];
+    },
+    enabled: !!parentStudentForm.parent_id,
+  });
+
+
   const studentOptions = useMemo(
     () =>
       (allStudents ?? []).map((s) => ({
@@ -362,6 +406,16 @@ export const AdminDashboardPage = () => {
         keywords: `${s.full_name} ${s.class_level ?? ""} ${s.batch ?? ""}`.trim(),
       })),
     [allStudents],
+  );
+
+  const availableStudentOptionsForParent = useMemo(
+    () =>
+      (availableStudentsForParent ?? []).map((s) => ({
+        value: s.id,
+        label: `${s.full_name}${s.class_level ? ` · ${s.class_level}` : ""}`,
+        keywords: `${s.full_name} ${s.class_level ?? ""} ${s.batch ?? ""}`.trim(),
+      })),
+    [availableStudentsForParent],
   );
 
   const parentOptions = useMemo(
@@ -384,7 +438,70 @@ export const AdminDashboardPage = () => {
     [allSchools],
   );
 
+
   const counts = data?.counts;
+
+  // Fetch user accounts overview for admin visibility
+  const { data: userAccounts, isLoading: userAccountsLoading } = useQuery({
+    queryKey: ["admin-user-accounts"],
+    queryFn: async () => {
+      // Get all users who have roles assigned (from user_roles table)
+      const { data: userRoles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .order("created_at", { ascending: false });
+
+      if (rolesError) {
+        throw new Error("Failed to load user roles");
+      }
+
+      // Get profile information for these users
+      const userIds = [...new Set(userRoles?.map(ur => ur.user_id) || [])];
+
+      if (userIds.length === 0) {
+        return [];
+      }
+
+      const [
+        { data: students, error: studentsError },
+        { data: parents, error: parentsError },
+        { data: schools, error: schoolsError },
+      ] = await Promise.all([
+        supabase.from("students").select("user_id, full_name").in("user_id", userIds),
+        supabase.from("parents").select("user_id, full_name").in("user_id", userIds),
+        supabase.from("schools").select("user_id, name").in("user_id", userIds),
+      ]);
+
+      if (studentsError || parentsError || schoolsError) {
+        throw new Error("Failed to load user profiles");
+      }
+
+      // Group roles by user_id
+      const rolesByUser = new Map<string, string[]>();
+      userRoles?.forEach(ur => {
+        if (!rolesByUser.has(ur.user_id)) {
+          rolesByUser.set(ur.user_id, []);
+        }
+        rolesByUser.get(ur.user_id)!.push(ur.role);
+      });
+
+      // Create profile maps
+      const studentMap = new Map(students?.map(s => [s.user_id, s]) || []);
+      const parentMap = new Map(parents?.map(p => [p.user_id, p]) || []);
+      const schoolMap = new Map(schools?.map(s => [s.user_id, s]) || []);
+
+      // Combine all user accounts
+      const userAccounts = userIds.map(userId => ({
+        user_id: userId,
+        roles: rolesByUser.get(userId) || [],
+        student_name: studentMap.get(userId)?.full_name || null,
+        parent_name: parentMap.get(userId)?.full_name || null,
+        school_name: schoolMap.get(userId)?.name || null,
+      }));
+
+      return userAccounts;
+    },
+  });
 
   const handleAnnouncementChange = (field: keyof z.infer<typeof announcementSchema>, value: unknown) => {
     setAnnouncementValues((prev) => ({ ...prev, [field]: value } as any));
@@ -395,6 +512,11 @@ export const AdminDashboardPage = () => {
     e.preventDefault();
     setStudentFormError(null);
 
+    if (!isSuperAdmin) {
+      setStudentFormError("This action requires super admin permission.");
+      return;
+    }
+
     const parsed = createStudentSchema.safeParse(studentForm);
     if (!parsed.success) {
       setStudentFormError(parsed.error.issues[0]?.message ?? "Please check the form.");
@@ -404,25 +526,89 @@ export const AdminDashboardPage = () => {
     setCreatingStudent(true);
     try {
       const v = parsed.data;
+
+      // For Lovable cloud: Since has_role() function isn't working, we'll try direct insert
+      // The user has confirmed super_admin role, so this should work with proper RLS bypass
+
+      // Since user has super_admin role (confirmed in console), try direct insert
+      // The RLS policy should allow this via the has_role conditions
+      console.log("Creating student with super_admin permissions:", {
+        user_id: v.user_id,
+        full_name: v.full_name,
+        school_id: v.school_id,
+        current_user: user?.id,
+        user_roles: roles
+      });
+
       const { error } = await supabase.from("students").insert({
+        user_id: v.user_id,
         full_name: v.full_name,
         class_level: v.class_level || null,
         batch: v.batch || null,
         gender: v.gender || null,
         age: (v.age as unknown as number | null) ?? null,
-        school_id: v.school_id ? v.school_id : null,
+        school_id: v.school_id || null,
       });
 
+      console.log("Student creation result:", error);
+
       if (error) {
-        setStudentFormError(error.message);
+        console.error("Student creation failed:", error);
+
+        // Provide detailed debugging info
+        const debugInfo = {
+          error_code: error.code,
+          error_message: error.message,
+          user_id: user?.id,
+          user_roles: roles,
+          target_user_id: v.user_id,
+          school_id: v.school_id
+        };
+        console.error("Debug info:", debugInfo);
+
+        // Handle specific error cases
+        if (error.message.includes("violates foreign key constraint") || error.message.includes("foreign key")) {
+          setStudentFormError("User account not found. Please verify the User ID is correct.");
+          return;
+        }
+        if (error.message.includes("duplicate key") || error.message.includes("unique constraint") || error.code === "23505") {
+          setStudentFormError("This user already has a student profile.");
+          return;
+        }
+        if (error.message.includes("permission") || error.message.includes("policy") || error.message.includes("violates row-level security")) {
+          setStudentFormError(`Database permission denied. Debug info logged to console. You have super_admin role but RLS is blocking access.`);
+          return;
+        }
+
+        setStudentFormError(`Failed to create student profile: ${error.message}`);
         return;
       }
 
-      toast({ title: "Student created", description: "You can now link this student to a parent and/or school." });
-      setStudentForm({ full_name: "", class_level: "", batch: "", gender: "", age: "", school_id: "" });
+      if (error) {
+        console.error("Student creation error:", error);
+        // Handle common error cases with user-friendly messages
+        if (error.message.includes("violates foreign key constraint") || error.message.includes("foreign key")) {
+          setStudentFormError("User account not found. Please verify the User ID is correct.");
+          return;
+        }
+        if (error.message.includes("duplicate key") || error.message.includes("unique constraint") || error.code === "23505") {
+          setStudentFormError("This user already has a student profile.");
+          return;
+        }
+        if (error.message.includes("permission") || error.message.includes("policy") || error.message.includes("violates row-level security")) {
+          setStudentFormError("Permission denied. Please ensure you have super admin access and try again.");
+          return;
+        }
+        setStudentFormError(`Failed to create student profile: ${error.message}`);
+        return;
+      }
+
+      toast({ title: "Student profile created", description: "You can now link this student to a parent and/or school." });
+      setStudentForm({ user_id: "", full_name: "", class_level: "", batch: "", gender: "", age: "", school_id: "" });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] }),
         queryClient.invalidateQueries({ queryKey: ["admin-dashboard-students"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-user-accounts"] }),
       ]);
     } finally {
       setCreatingStudent(false);
@@ -432,6 +618,11 @@ export const AdminDashboardPage = () => {
   const handleLinkParentToStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     setParentStudentError(null);
+
+    if (!isSuperAdmin) {
+      setParentStudentError("This action requires super admin permission.");
+      return;
+    }
 
     const parsed = linkParentStudentSchema.safeParse(parentStudentForm);
     if (!parsed.success) {
@@ -451,7 +642,7 @@ export const AdminDashboardPage = () => {
         .maybeSingle();
 
       if (existingError) {
-        setParentStudentError(existingError.message);
+        setParentStudentError("Failed to check existing links. Please try again.");
         return;
       }
 
@@ -467,13 +658,14 @@ export const AdminDashboardPage = () => {
       });
 
       if (error) {
-        setParentStudentError(error.message);
+        setParentStudentError("This action requires super admin permission.");
         return;
       }
 
       toast({ title: "Linked", description: "Parent and student are now connected." });
       setParentStudentForm({ parent_id: "", student_id: "", relationship: "" });
       await queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-user-accounts"] });
     } finally {
       setLinkingParentStudent(false);
     }
@@ -482,6 +674,11 @@ export const AdminDashboardPage = () => {
   const handleAssignSchool = async (e: React.FormEvent) => {
     e.preventDefault();
     setAssignSchoolError(null);
+
+    if (!isSuperAdmin) {
+      setAssignSchoolError("This action requires super admin permission.");
+      return;
+    }
 
     const parsed = assignSchoolSchema.safeParse(assignSchoolForm);
     if (!parsed.success) {
@@ -497,7 +694,7 @@ export const AdminDashboardPage = () => {
       const { error } = await supabase.from("students").update({ school_id: schoolId }).eq("id", v.student_id);
 
       if (error) {
-        setAssignSchoolError(error.message);
+        setAssignSchoolError("This action requires super admin permission.");
         return;
       }
 
@@ -557,6 +754,7 @@ export const AdminDashboardPage = () => {
       setAnnouncementValues({ title: "", body: "", target: "all" as AnnouncementTarget });
       setAnnouncementErrors({});
       await queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-user-accounts"] });
     } finally {
       setCreatingAnnouncement(false);
     }
@@ -615,6 +813,7 @@ export const AdminDashboardPage = () => {
       });
 
       await queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-user-accounts"] });
     } finally {
       setProcessingApprovalId(null);
     }
@@ -643,6 +842,7 @@ export const AdminDashboardPage = () => {
       });
 
       await queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-user-accounts"] });
     } finally {
       setProcessingPaymentId(null);
     }
@@ -671,6 +871,7 @@ export const AdminDashboardPage = () => {
       });
 
       await queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-user-accounts"] });
     } finally {
       setProcessingProjectId(null);
     }
@@ -698,13 +899,13 @@ export const AdminDashboardPage = () => {
       />
       <MainNavbar />
       <main className="container pb-24 pt-10">
-        <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={() => navigate("/")}
-            className="text-xs"
+            className="text-xs self-start"
           >
             ← Back
           </Button>
@@ -717,8 +918,8 @@ export const AdminDashboardPage = () => {
 
         <header className="mb-6">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-accent-foreground/70">Super Admin</p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">Control centre</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+          <h1 className="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">Control centre</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             A single view of who has access, which profiles exist, which projects are live, and how enrollment payments are
             flowing through the portal.
           </p>
@@ -744,7 +945,7 @@ export const AdminDashboardPage = () => {
 
         {!isLoading && !isError && counts && (
           <>
-            <section className="mb-6 grid gap-4 md:grid-cols-4">
+            <section className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Card className="rounded-3xl border-primary/15 bg-card shadow-[var(--shadow-soft)]">
                 <CardHeader className="p-4 pb-2">
                   <CardTitle className="text-xs font-semibold uppercase tracking-[0.2em] text-accent-foreground/80">
@@ -816,12 +1017,13 @@ export const AdminDashboardPage = () => {
             </section>
 
             <Tabs defaultValue="approvals" className="space-y-4">
-              <TabsList className="rounded-full bg-muted/70 p-1 text-[11px]">
-                <TabsTrigger value="approvals">Approvals &amp; roles</TabsTrigger>
-                <TabsTrigger value="profiles">Profiles &amp; linking</TabsTrigger>
-                <TabsTrigger value="projects">Projects</TabsTrigger>
-                <TabsTrigger value="payments">Payments</TabsTrigger>
-                <TabsTrigger value="announcements">Announcements</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 rounded-full bg-muted/70 p-1 text-[10px] sm:grid-cols-3 lg:flex lg:text-[11px]">
+                <TabsTrigger value="approvals" className="text-center">Approvals</TabsTrigger>
+                <TabsTrigger value="profiles" className="text-center">Profiles</TabsTrigger>
+                <TabsTrigger value="users" className="text-center">Users</TabsTrigger>
+                <TabsTrigger value="projects" className="text-center">Projects</TabsTrigger>
+                <TabsTrigger value="payments" className="text-center">Payments</TabsTrigger>
+                <TabsTrigger value="announcements" className="text-center">Announce</TabsTrigger>
               </TabsList>
 
               <TabsContent value="approvals" className="mt-4">
@@ -912,12 +1114,27 @@ export const AdminDashboardPage = () => {
                       </p>
                     </CardHeader>
 
-                    <CardContent className="grid gap-4 p-4 pt-0 md:grid-cols-3">
+                    <CardContent className="grid gap-4 p-4 pt-0 sm:grid-cols-2 lg:grid-cols-3">
                       <form onSubmit={handleCreateStudent} className="rounded-2xl border border-border/70 bg-muted/40 p-3">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-foreground/80">
                           Create student
                         </p>
                         <div className="mt-3 space-y-3 text-xs">
+                          <div className="space-y-1">
+                            <Label htmlFor="student-user-id">User ID</Label>
+                            <Input
+                              id="student-user-id"
+                              value={studentForm.user_id}
+                              onChange={(e) => setStudentForm((p) => ({ ...p, user_id: e.target.value }))}
+                              placeholder="e.g. 123e4567-e89b-12d3-a456-426614174000"
+                              required
+                              disabled={creatingStudent}
+                            />
+                            <p className="text-[10px] text-muted-foreground">
+                              Enter the user's UUID from Supabase dashboard or user communications.
+                            </p>
+                          </div>
+
                           <div className="space-y-1">
                             <Label htmlFor="student-full-name">Full name</Label>
                             <Input
@@ -926,6 +1143,7 @@ export const AdminDashboardPage = () => {
                               onChange={(e) => setStudentForm((p) => ({ ...p, full_name: e.target.value }))}
                               placeholder="e.g. Chinedu Okoye"
                               required
+                              disabled={creatingStudent}
                             />
                           </div>
 
@@ -937,6 +1155,7 @@ export const AdminDashboardPage = () => {
                                 value={studentForm.class_level}
                                 onChange={(e) => setStudentForm((p) => ({ ...p, class_level: e.target.value }))}
                                 placeholder="JSS 2"
+                                disabled={creatingStudent}
                               />
                             </div>
                             <div className="space-y-1">
@@ -946,6 +1165,7 @@ export const AdminDashboardPage = () => {
                                 value={studentForm.batch}
                                 onChange={(e) => setStudentForm((p) => ({ ...p, batch: e.target.value }))}
                                 placeholder="2026"
+                                disabled={creatingStudent}
                               />
                             </div>
                           </div>
@@ -958,6 +1178,7 @@ export const AdminDashboardPage = () => {
                                 value={studentForm.gender}
                                 onChange={(e) => setStudentForm((p) => ({ ...p, gender: e.target.value }))}
                                 placeholder="Female"
+                                disabled={creatingStudent}
                               />
                             </div>
                             <div className="space-y-1">
@@ -968,6 +1189,7 @@ export const AdminDashboardPage = () => {
                                 value={studentForm.age}
                                 onChange={(e) => setStudentForm((p) => ({ ...p, age: e.target.value }))}
                                 placeholder="12"
+                                disabled={creatingStudent}
                               />
                             </div>
                           </div>
@@ -978,8 +1200,8 @@ export const AdminDashboardPage = () => {
                               items={schoolOptions}
                               value={studentForm.school_id || null}
                               onValueChange={(value) => setStudentForm((p) => ({ ...p, school_id: value }))}
-                              placeholder={(schoolOptions.length ? "Select school" : "No schools yet") as string}
-                              disabled={!schoolOptions.length}
+                              placeholder={(schoolOptions.length ? "Select school" : "No schools available") as string}
+                              disabled={!schoolOptions.length || creatingStudent}
                             />
                             <Button
                               type="button"
@@ -987,7 +1209,7 @@ export const AdminDashboardPage = () => {
                               size="sm"
                               className="h-7 px-2 text-[11px]"
                               onClick={() => setStudentForm((p) => ({ ...p, school_id: "" }))}
-                              disabled={!studentForm.school_id}
+                              disabled={!studentForm.school_id || creatingStudent}
                             >
                               Clear school
                             </Button>
@@ -1011,8 +1233,10 @@ export const AdminDashboardPage = () => {
                             <Combobox
                               items={parentOptions}
                               value={parentStudentForm.parent_id || null}
-                              onValueChange={(value) => setParentStudentForm((p) => ({ ...p, parent_id: value }))}
-                              placeholder={(parentOptions.length ? "Select parent" : "No parents yet") as string}
+                              onValueChange={(value) => {
+                                setParentStudentForm((p) => ({ ...p, parent_id: value, student_id: "" }));
+                              }}
+                              placeholder={(parentOptions.length ? "Select parent" : "No approved parents yet. Parent must sign up first.") as string}
                               disabled={!parentOptions.length || linkingParentStudent}
                             />
                           </div>
@@ -1020,12 +1244,23 @@ export const AdminDashboardPage = () => {
                           <div className="space-y-1">
                             <Label>Student</Label>
                             <Combobox
-                              items={studentOptions}
+                              items={availableStudentOptionsForParent}
                               value={parentStudentForm.student_id || null}
                               onValueChange={(value) => setParentStudentForm((p) => ({ ...p, student_id: value }))}
-                              placeholder={(studentOptions.length ? "Select student" : "No students yet") as string}
-                              disabled={!studentOptions.length || linkingParentStudent}
+                              placeholder={
+                                !parentStudentForm.parent_id
+                                  ? "Select a parent first"
+                                  : availableStudentOptionsForParent.length
+                                    ? "Select student to link"
+                                    : "No available students for this parent"
+                              }
+                              disabled={!parentStudentForm.parent_id || !availableStudentOptionsForParent.length || linkingParentStudent}
                             />
+                            {parentStudentForm.parent_id && availableStudentOptionsForParent.length === 0 && (
+                              <p className="text-[10px] text-muted-foreground">
+                                All students are already linked to this parent.
+                              </p>
+                            )}
                           </div>
 
                           <div className="space-y-1">
@@ -1062,7 +1297,7 @@ export const AdminDashboardPage = () => {
                               items={studentOptions}
                               value={assignSchoolForm.student_id || null}
                               onValueChange={(value) => setAssignSchoolForm((p) => ({ ...p, student_id: value }))}
-                              placeholder={(studentOptions.length ? "Select student" : "No students yet") as string}
+                              placeholder={(studentOptions.length ? "Select student" : "No students available") as string}
                               disabled={!studentOptions.length || assigningSchool}
                             />
                           </div>
@@ -1073,7 +1308,7 @@ export const AdminDashboardPage = () => {
                               items={schoolOptions}
                               value={assignSchoolForm.school_id || null}
                               onValueChange={(value) => setAssignSchoolForm((p) => ({ ...p, school_id: value }))}
-                              placeholder={(schoolOptions.length ? "Select school" : "No schools yet") as string}
+                              placeholder={(schoolOptions.length ? "Select school" : "No schools available") as string}
                               disabled={!schoolOptions.length || assigningSchool}
                             />
                             <Button
@@ -1111,8 +1346,54 @@ export const AdminDashboardPage = () => {
                         <ul className="mt-2 space-y-1.5">
                           {data?.profileSummary.students.map((student) => (
                             <li key={student.id} className="flex items-center justify-between gap-2">
-                              <span className="truncate text-foreground">{student.full_name}</span>
-                              <span className="text-[10px] text-muted-foreground">{student.class_level || "Class ?"}</span>
+                              <div className="flex-1 truncate">
+                                <span className="text-foreground">{student.full_name}</span>
+                                <span className="text-[10px] text-muted-foreground ml-2">{student.class_level || "Class ?"}</span>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                onClick={async () => {
+                                  if (!confirm(`Delete student profile for ${student.full_name}? This action cannot be undone.`)) {
+                                    return;
+                                  }
+
+                                  try {
+                                    const { error } = await supabase
+                                      .from("students")
+                                      .delete()
+                                      .eq("id", student.id);
+
+                                    if (error) {
+                                      toast({
+                                        title: "Failed to delete student",
+                                        description: error.message,
+                                        variant: "destructive"
+                                      });
+                                      return;
+                                    }
+
+                                    toast({
+                                      title: "Student deleted",
+                                      description: "Student profile has been removed."
+                                    });
+
+                                    // Refresh the data
+                                    await queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-user-accounts"] });
+                                    await queryClient.invalidateQueries({ queryKey: ["admin-user-accounts"] });
+                                  } catch (err) {
+                                    toast({
+                                      title: "Error",
+                                      description: "Failed to delete student profile.",
+                                      variant: "destructive"
+                                    });
+                                  }
+                                }}
+                              >
+                                🗑️
+                              </Button>
                             </li>
                           )) || <li className="text-muted-foreground">No students yet.</li>}
                         </ul>
@@ -1125,8 +1406,54 @@ export const AdminDashboardPage = () => {
                         <ul className="mt-2 space-y-1.5">
                           {data?.profileSummary.parents.map((parent) => (
                             <li key={parent.id} className="flex items-center justify-between gap-2">
-                              <span className="truncate text-foreground">{parent.full_name}</span>
-                              <span className="text-[10px] text-muted-foreground">{parent.email || "Email ?"}</span>
+                              <div className="flex-1 truncate">
+                                <span className="text-foreground">{parent.full_name}</span>
+                                <span className="text-[10px] text-muted-foreground ml-2">{parent.email || "Email ?"}</span>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                onClick={async () => {
+                                  if (!confirm(`Delete parent profile for ${parent.full_name}? This action cannot be undone.`)) {
+                                    return;
+                                  }
+
+                                  try {
+                                    const { error } = await supabase
+                                      .from("parents")
+                                      .delete()
+                                      .eq("id", parent.id);
+
+                                    if (error) {
+                                      toast({
+                                        title: "Failed to delete parent",
+                                        description: error.message,
+                                        variant: "destructive"
+                                      });
+                                      return;
+                                    }
+
+                                    toast({
+                                      title: "Parent deleted",
+                                      description: "Parent profile has been removed."
+                                    });
+
+                                    // Refresh the data
+                                    await queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-user-accounts"] });
+                                    await queryClient.invalidateQueries({ queryKey: ["admin-user-accounts"] });
+                                  } catch (err) {
+                                    toast({
+                                      title: "Error",
+                                      description: "Failed to delete parent profile.",
+                                      variant: "destructive"
+                                    });
+                                  }
+                                }}
+                              >
+                                🗑️
+                              </Button>
                             </li>
                           )) || <li className="text-muted-foreground">No parents yet.</li>}
                         </ul>
@@ -1150,6 +1477,241 @@ export const AdminDashboardPage = () => {
                     </CardContent>
                   </Card>
                 </div>
+              </TabsContent>
+
+              <TabsContent value="users" className="mt-4">
+                <Card className="rounded-3xl border-border/70 bg-card shadow-[var(--shadow-soft)]">
+                  <CardHeader className="p-4 pb-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-sm font-semibold tracking-tight">User accounts overview</CardTitle>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          View all approved user accounts. Use User IDs to create student profiles.
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => queryClient.invalidateQueries({ queryKey: ["admin-user-accounts"] })}
+                        disabled={userAccountsLoading}
+                        className="text-[11px]"
+                      >
+                        {userAccountsLoading ? "Loading..." : "Refresh"}
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    {userAccountsLoading ? (
+                      <div className="p-6 text-center">
+                        <div className="text-xs text-muted-foreground">Loading user accounts...</div>
+                      </div>
+                    ) : userAccounts && userAccounts.length > 0 ? (
+                      <ScrollArea className="max-h-[500px]">
+                        <Table className="min-w-full text-xs">
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>User ID</TableHead>
+                              <TableHead>Roles</TableHead>
+                              <TableHead>Student Profile</TableHead>
+                              <TableHead>Parent Profile</TableHead>
+                              <TableHead>School Profile</TableHead>
+                              <TableHead className="w-16">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {userAccounts.map((account) => (
+                              <TableRow key={account.user_id}>
+                                <TableCell className="font-mono text-[11px] font-medium">
+                                  <div className="flex items-center gap-2">
+                                    <span className="truncate max-w-32">{account.user_id}</span>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 w-6 p-0"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(account.user_id);
+                                        toast({ title: "Copied!", description: "User ID copied to clipboard" });
+                                      }}
+                                    >
+                                      📋
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex flex-wrap gap-1">
+                                    {account.roles.map((role) => (
+                                      <Badge key={role} variant="secondary" className="text-[10px] capitalize">
+                                        {role}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-[11px] text-muted-foreground">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span>{account.student_name || "—"}</span>
+                                    {account.student_name && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-4 w-4 p-0 text-destructive hover:text-destructive"
+                                        onClick={async () => {
+                                          if (!confirm(`Delete student profile for ${account.student_name}? This action cannot be undone.`)) {
+                                            return;
+                                          }
+
+                                          try {
+                                            const { error } = await supabase
+                                              .from("students")
+                                              .delete()
+                                              .eq("user_id", account.user_id);
+
+                                            if (error) {
+                                              toast({
+                                                title: "Failed to delete student",
+                                                description: error.message,
+                                                variant: "destructive"
+                                              });
+                                              return;
+                                            }
+
+                                            toast({
+                                              title: "Student deleted",
+                                              description: "Student profile has been removed."
+                                            });
+
+                                            await queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-user-accounts"] });
+                                            await queryClient.invalidateQueries({ queryKey: ["admin-user-accounts"] });
+                                          } catch (err) {
+                                            toast({
+                                              title: "Error",
+                                              description: "Failed to delete student profile.",
+                                              variant: "destructive"
+                                            });
+                                          }
+                                        }}
+                                      >
+                                        🗑️
+                                      </Button>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-[11px] text-muted-foreground">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span>{account.parent_name || "—"}</span>
+                                    {account.parent_name && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-4 w-4 p-0 text-destructive hover:text-destructive"
+                                        onClick={async () => {
+                                          if (!confirm(`Delete parent profile for ${account.parent_name}? This action cannot be undone.`)) {
+                                            return;
+                                          }
+
+                                          try {
+                                            const { error } = await supabase
+                                              .from("parents")
+                                              .delete()
+                                              .eq("user_id", account.user_id);
+
+                                            if (error) {
+                                              toast({
+                                                title: "Failed to delete parent",
+                                                description: error.message,
+                                                variant: "destructive"
+                                              });
+                                              return;
+                                            }
+
+                                            toast({
+                                              title: "Parent deleted",
+                                              description: "Parent profile has been removed."
+                                            });
+
+                                            await queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-user-accounts"] });
+                                            await queryClient.invalidateQueries({ queryKey: ["admin-user-accounts"] });
+                                          } catch (err) {
+                                            toast({
+                                              title: "Error",
+                                              description: "Failed to delete parent profile.",
+                                              variant: "destructive"
+                                            });
+                                          }
+                                        }}
+                                      >
+                                        🗑️
+                                      </Button>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-[11px] text-muted-foreground">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span>{account.school_name || "—"}</span>
+                                    {account.school_name && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-4 w-4 p-0 text-destructive hover:text-destructive"
+                                        onClick={async () => {
+                                          if (!confirm(`Delete school profile for ${account.school_name}? This action cannot be undone.`)) {
+                                            return;
+                                          }
+
+                                          try {
+                                            const { error } = await supabase
+                                              .from("schools")
+                                              .delete()
+                                              .eq("user_id", account.user_id);
+
+                                            if (error) {
+                                              toast({
+                                                title: "Failed to delete school",
+                                                description: error.message,
+                                                variant: "destructive"
+                                              });
+                                              return;
+                                            }
+
+                                            toast({
+                                              title: "School deleted",
+                                              description: "School profile has been removed."
+                                            });
+
+                                            await queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-user-accounts"] });
+                                            await queryClient.invalidateQueries({ queryKey: ["admin-user-accounts"] });
+                                          } catch (err) {
+                                            toast({
+                                              title: "Error",
+                                              description: "Failed to delete school profile.",
+                                              variant: "destructive"
+                                            });
+                                          }
+                                        }}
+                                      >
+                                        🗑️
+                                      </Button>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </ScrollArea>
+                    ) : (
+                      <div className="p-6 text-center text-xs text-muted-foreground">
+                        <p>No approved user accounts found.</p>
+                        <p className="mt-1">Users appear here after registration and admin approval.</p>
+                        <p className="mt-2 text-[11px]">
+                          Check the "Approvals & roles" tab to approve new registrations.
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="projects" className="mt-4">
@@ -1654,6 +2216,7 @@ export const AdminDashboardPage = () => {
                               setProjectErrors({});
                               setProjectDialogOpen(false);
                               await queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-user-accounts"] });
                             } finally {
                               setCreatingProject(false);
                             }
@@ -1709,6 +2272,17 @@ export const AdminDashboardPage = () => {
                                   >
                                     {payment.status}
                                   </Badge>
+                                </TableCell>
+                                <TableCell className="max-w-[180px] text-[11px] text-muted-foreground">
+                                  <div className="space-y-1">
+                                    <p className="font-medium text-foreground">
+                                      {((payment.metadata as Record<string, unknown> | null)?.child_name as string | undefined) || "—"}
+                                    </p>
+                                    <p>
+                                      {((payment.metadata as Record<string, unknown> | null)?.child_age as string | undefined) || "—"} · {((payment.metadata as Record<string, unknown> | null)?.child_class as string | undefined) || "—"}
+                                    </p>
+                                    <p>{((payment.metadata as Record<string, unknown> | null)?.parent_email as string | undefined) || "—"}</p>
+                                  </div>
                                 </TableCell>
                                 <TableCell className="font-mono text-[11px]">
                                   {payment.user_id || "—"}

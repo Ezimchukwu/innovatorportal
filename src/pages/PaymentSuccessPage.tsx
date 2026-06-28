@@ -58,30 +58,40 @@ export const PaymentSuccessPage = () => {
 
         setVerifyResult(data);
 
-        // If the user is logged in, upsert a payment record linked to their account
-        if (user) {
-          const { data: existing } = await supabase
-            .from("payments")
-            .select("id, status")
-            .eq("provider_reference", data.reference)
-            .maybeSingle();
+        const rawPayload = (data.raw as { metadata?: Record<string, unknown> } | undefined) ?? {};
+        const childName = typeof rawPayload.metadata?.child_name === "string" ? rawPayload.metadata.child_name : "";
+        const childAge = typeof rawPayload.metadata?.child_age === "string" ? rawPayload.metadata.child_age : "";
+        const childClass = typeof rawPayload.metadata?.child_class === "string" ? rawPayload.metadata.child_class : "";
+        const parentEmail = typeof rawPayload.metadata?.parent_email === "string" ? rawPayload.metadata.parent_email : "";
 
-          if (!existing) {
-            const amountNaira = Math.round((data.amount ?? 0) / 100);
+        const { data: existing } = await supabase
+          .from("payments")
+          .select("id, status")
+          .eq("provider_reference", data.reference)
+          .maybeSingle();
 
-            const { error: insertError } = await supabase.from("payments").insert({
-              user_id: user.id,
-              amount: amountNaira,
-              currency: data.currency ?? "NGN",
-              provider: "paystack",
-              provider_reference: data.reference,
-              status: data.status === "success" ? "verified" : "failed",
-              metadata: data.raw as any,
-            });
+        if (!existing) {
+          const amountNaira = Math.round((data.amount ?? 0) / 100);
+          const paymentUserId = user?.id ?? crypto.randomUUID();
 
-            if (insertError) {
-              console.error("Error saving payment record", insertError);
-            }
+          const { error: insertError } = await supabase.from("payments").insert({
+            user_id: paymentUserId,
+            amount: amountNaira,
+            currency: data.currency ?? "NGN",
+            provider: "paystack",
+            provider_reference: data.reference,
+            status: data.status === "success" ? "verified" : "failed",
+            metadata: {
+              ...(data.raw as Record<string, unknown>),
+              child_name: childName,
+              child_age: childAge,
+              child_class: childClass,
+              parent_email: parentEmail,
+            },
+          });
+
+          if (insertError) {
+            console.error("Error saving payment record", insertError);
           }
         }
       } catch (err) {

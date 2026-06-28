@@ -218,7 +218,7 @@ export const AuthPage = () => {
 
         const signedInUser = data.user;
 
-        // Ensure the super admin email always receives the admin role
+        // Ensure the super admin email always receives the super_admin role
         if (signedInUser?.email && signedInUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
           const { data: adminRoles, error: adminFetchError } = await supabase
             .from("user_roles")
@@ -226,9 +226,9 @@ export const AuthPage = () => {
             .eq("user_id", signedInUser.id);
 
           if (!adminFetchError) {
-            const alreadyAdmin = adminRoles?.some((r) => r.role === "admin");
-            if (!alreadyAdmin) {
-              await supabase.from("user_roles").insert({ user_id: signedInUser.id, role: "admin" });
+            const alreadySuperAdmin = adminRoles?.some((r) => r.role === "super_admin");
+            if (!alreadySuperAdmin) {
+              await supabase.from("user_roles").insert({ user_id: signedInUser.id, role: "super_admin" });
             }
           }
         }
@@ -344,10 +344,10 @@ export const AuthPage = () => {
               type="button"
               onClick={() => setSelectedRole(role.value)}
               className={
-                "flex flex-col items-start gap-1 rounded-2xl border px-3 py-2 text-left text-xs transition-colors hover-scale " +
+                "flex flex-col items-start gap-1 rounded-2xl border px-3 py-2 text-left text-xs transition-all duration-300 hover-scale interactive-button " +
                 (selectedRole === role.value
-                  ? "border-primary bg-primary/5 text-foreground"
-                  : "border-border/70 bg-card/80 text-muted-foreground hover:border-accent hover:bg-card")
+                  ? "border-primary bg-primary/5 text-foreground shadow-md"
+                  : "border-border/70 bg-card/80 text-muted-foreground hover:border-accent hover:bg-card hover:shadow-sm")
               }
             >
               <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-foreground/90">
@@ -437,7 +437,7 @@ export const AuthPage = () => {
 
               {mode === "login" && renderRolePicker()}
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" variant="hero" className="w-full interactive-button" disabled={loading}>
                 {loading
                   ? mode === "forgot"
                     ? "Sending reset link..."
@@ -481,7 +481,7 @@ export const AuthPage = () => {
 
               {resetError && <p className="text-xs text-destructive">{resetError}</p>}
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" variant="school" className="w-full interactive-button" disabled={loading}>
                 {loading ? "Updating password..." : "Update password"}
               </Button>
 

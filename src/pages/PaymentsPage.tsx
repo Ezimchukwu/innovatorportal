@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const ENROLLMENT_AMOUNT_NGN = 30000; // displayed amount
 const ENROLLMENT_AMOUNT_KOBO = ENROLLMENT_AMOUNT_NGN * 100; // Paystack uses kobo
@@ -13,7 +13,16 @@ export const PaymentsPage = () => {
   const { user, session } = useAuth();
   const { toast } = useToast();
   const [email, setEmail] = useState<string>(user?.email ?? "");
+  const [childName, setChildName] = useState("");
+  const [childAge, setChildAge] = useState("");
+  const [childClass, setChildClass] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user?.email) {
+      setEmail(user.email);
+    }
+  }, [user?.email]);
 
   const handleStartPayment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,10 +35,28 @@ export const PaymentsPage = () => {
       return;
     }
 
-    if (!session?.access_token) {
+    if (!childName.trim()) {
       toast({
-        title: "Sign in required",
-        description: "Please sign in before starting a payment.",
+        title: "Child name required",
+        description: "Please enter the child’s name for enrollment records.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!childAge.trim()) {
+      toast({
+        title: "Child age required",
+        description: "Please enter the child’s age for enrollment records.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!childClass.trim()) {
+      toast({
+        title: "Child class required",
+        description: "Please enter the child’s class for enrollment records.",
         variant: "destructive",
       });
       return;
@@ -37,16 +64,27 @@ export const PaymentsPage = () => {
 
     setLoading(true);
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+
+      if (session?.access_token) {
+        headers.Authorization = `Bearer ${session.access_token}`;
+      }
+
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paystack-init`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
+        headers,
         body: JSON.stringify({
           email,
           amount: ENROLLMENT_AMOUNT_KOBO,
           callback_url: `${window.location.origin}/payments/success`,
+          metadata: {
+            child_name: childName.trim(),
+            child_age: childAge.trim(),
+            child_class: childClass.trim(),
+            source: "guest_enrollment",
+          },
         }),
       });
 
@@ -90,6 +128,13 @@ export const PaymentsPage = () => {
             Use this secure payment step to start your child&apos;s journey. After payment, you&apos;ll be guided to create their
             dashboard profile.
           </p>
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="text-muted-foreground line-through">NGN 50,000</span>
+            <span className="font-semibold text-primary">NGN 30,000</span>
+            <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+              First 25 students only
+            </span>
+          </div>
 
           <form onSubmit={handleStartPayment} className="space-y-4 text-sm">
             <div className="space-y-1.5">
@@ -108,6 +153,38 @@ export const PaymentsPage = () => {
               </p>
             </div>
 
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-foreground" htmlFor="child-name">
+                  Child&apos;s name
+                </label>
+                <Input
+                  id="child-name"
+                  value={childName}
+                  onChange={(e) => setChildName(e.target.value)}
+                  placeholder="Amina Okafor"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-foreground" htmlFor="child-age">
+                  Child&apos;s age
+                </label>
+                <Input id="child-age" value={childAge} onChange={(e) => setChildAge(e.target.value)} placeholder="12" />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-foreground" htmlFor="child-class">
+                Child&apos;s class
+              </label>
+              <Input
+                id="child-class"
+                value={childClass}
+                onChange={(e) => setChildClass(e.target.value)}
+                placeholder="JSS 2"
+              />
+            </div>
+
             <div className="flex items-center justify-between rounded-2xl bg-muted/60 px-4 py-3 text-xs text-muted-foreground">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Enrollment fee</p>
@@ -123,8 +200,9 @@ export const PaymentsPage = () => {
             <Button
               type="submit"
               size="lg"
+              variant="parent"
               disabled={loading}
-              className="mt-1 w-full hover-scale bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[var(--shadow-soft)]"
+              className="mt-1 w-full interactive-button button-glow"
             >
               {loading ? "Redirecting to Paystack..." : "Pay with Paystack"}
             </Button>

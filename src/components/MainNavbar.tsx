@@ -87,8 +87,8 @@ export const MainNavbar = () => {
             <span className="text-lg font-semibold">AI</span>
           </div>
           <div className="flex flex-col leading-tight">
-            <span className="text-sm font-semibold tracking-tight">AI Innovators</span>
-            <span className="text-xs text-primary-foreground/80">Young Minds, Bold Ideas</span>
+            <span className="text-sm font-semibold tracking-tight">AI SUMMER HOLIDAY PROGRAM</span>
+            <span className="text-xs text-primary-foreground/80">Practical AI + Creativity + Innovation</span>
           </div>
         </Link>
 

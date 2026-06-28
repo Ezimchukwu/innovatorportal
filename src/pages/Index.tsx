@@ -15,6 +15,7 @@ import parent3 from "@/assets/testimonial-parent-3.jpg";
 import parent4 from "@/assets/testimonial-parent-4.jpg";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Brain, Computer, GraduationCap, Mic2, Palette, Sparkles, TrendingUp, Video } from "lucide-react";
 
 type ProjectSummary = Pick<
   Tables<"projects">,
@@ -80,73 +81,175 @@ const Index = () => {
     { src: heroStudentPresenting, alt: "Student presenting a digital project on a large screen to classmates" },
   ];
 
+  const learningModules = [
+    {
+      title: "Web Development & Mini Projects",
+      description: [
+        "Building real-world web applications",
+        "Website creation",
+        "Interactive mini-games",
+        "Solving practical problems with technology",
+      ],
+      icon: Sparkles,
+    },
+    {
+      title: "AI Tools & Prompt Engineering",
+      description: [
+        "Artificial Intelligence fundamentals",
+        "Prompt Engineering",
+        "AI-assisted productivity",
+        "AI-powered learning systems",
+      ],
+      icon: Brain,
+    },
+    {
+      title: "Music & Podcast Creation",
+      description: [
+        "Music creation tools",
+        "Podcast production",
+        "Audio editing",
+        "Creative storytelling",
+      ],
+      icon: Mic2,
+    },
+    {
+      title: "Computer Fundamentals",
+      description: [
+        "Computer basics",
+        "Digital literacy",
+        "Productivity tools",
+        "Internet research",
+      ],
+      icon: Computer,
+    },
+    {
+      title: "Academic Research & Study Skills",
+      description: [
+        "Research techniques",
+        "Understanding difficult topics",
+        "Customized learning support",
+        "Study productivity methods",
+      ],
+      icon: GraduationCap,
+    },
+    {
+      title: "Video Creation & Animation",
+      description: [
+        "AI video creation",
+        "Animation tools",
+        "Content production",
+        "Visual storytelling",
+      ],
+      icon: Video,
+    },
+    {
+      title: "Graphic Design & Creativity",
+      description: [
+        "Professional flyer design",
+        "Presentation design",
+        "Image generation",
+        "Creative branding",
+      ],
+      icon: Palette,
+    },
+    {
+      title: "Real Project Development",
+      description: [
+        "Build practical projects",
+        "Team collaboration",
+        "Innovation challenges",
+        "Portfolio creation",
+      ],
+      icon: TrendingUp,
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Seo
-        title="AI Innovators – Real Projects, Real Outcomes"
-        description="See what African kids actually build with AI – real web apps, games and digital projects validated by parents and schools."
+        title="AI Summer Holiday Program | Innovator Portal"
+        description="Join the AI Summer Holiday Program for children and young adults aged 8–21. Learn AI, Web Development, Content Creation, Prompt Engineering, Graphic Design, Research Skills, and more through practical project-based learning in Enugu State."
         canonical={window.location.origin}
+        keywords="AI Summer Holiday Program, AI Training for Kids, Enugu Tech Bootcamp, Summer Coding Program, Artificial Intelligence Training Nigeria, Youth Technology Program, Web Development for Students, Prompt Engineering Training"
       />
       <MainNavbar />
 
-      <main className="container pb-24 pt-8 md:pt-14">
-        {/* HERO: Proof-first storytelling */}
+      <main className="mx-auto w-full max-w-7xl overflow-x-clip px-4 pb-24 pt-6 sm:px-6 md:pt-14 lg:px-8">
         <section className="grid gap-8 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] md:items-center">
-          <div className="space-y-5">
-            <div className="inline-flex items-center gap-2 rounded-full bg-card/80 px-3 py-1 text-[11px] font-medium text-muted-foreground shadow-sm">
-              <span className="h-2 w-2 rounded-full bg-success" />
-              Built in Nigeria. Trusted by parents and schools.
+          <div className="space-y-5 w-full">
+            <div className="inline-flex w-full max-w-sm items-center gap-2 rounded-full border border-primary/20 bg-gradient-to-r from-primary via-sky-500 to-secondary px-3 py-2 text-[9px] font-black uppercase tracking-[0.2em] text-white shadow-lg shadow-primary/20 sm:max-w-full sm:px-4 sm:text-[10px] sm:tracking-[0.28em]">
+              <span className="h-2 w-2 flex-shrink-0 rounded-full bg-white" />
+              <span className="truncate">2026 AI SUMMER HOLIDAY PROGRAM</span>
             </div>
 
             <div className="space-y-3">
-              <h1 className="text-balance text-2xl font-semibold tracking-tight md:text-3xl lg:text-4xl">
+              <h1 className="text-balance text-[1.5rem] font-black leading-[1.1] tracking-[-0.02em] text-slate-700 sm:text-[1.75rem] md:text-3xl lg:text-4xl">
                 Proof over promises.
-                <span className="block text-primary">Real projects your child actually ships.</span>
+                <span className="mt-2 block bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                  Real projects your child actually ships.
+                </span>
               </h1>
-              <p className="max-w-xl text-balance text-sm text-muted-foreground">
+              <p className="text-balance text-xs font-medium leading-6 text-slate-600 sm:text-sm md:text-base">
                 The AI Innovators Program is a project-first experience where African kids and teens build web apps,
                 games and AI-powered ideas – with every project saved, tracked and visible to you.
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 text-sm">
+            <div className="rounded-2xl border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-amber-50 p-3 text-slate-700 shadow-[0_20px_55px_rgba(37,99,235,0.08)] sm:p-6">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-primary">AI Summer Holiday Program</p>
+              <h2 className="mt-2 text-base font-bold leading-7 text-slate-700 sm:text-lg sm:leading-8">
+                Empowering children and teenagers with practical AI, technology, creativity, and innovation skills through hands-on learning and real-world projects.
+              </h2>
+              <p className="mt-2 text-xs font-semibold text-slate-600 sm:mt-3 sm:text-sm">
+                Age Range: <span className="font-black text-slate-700">8 – 21 Years</span>
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs sm:mt-3 sm:text-sm">
+                <span className="text-slate-400 line-through">₦50,000</span>
+                <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 sm:text-[11px]">
+                  Now ₦30,000 for the first 25 students
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-stretch gap-2 text-xs sm:gap-3 sm:text-sm sm:flex-row sm:items-center">
               <Button
                 asChild
                 size="sm"
-                className="hover-scale bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[var(--shadow-soft)]"
+                variant="playful"
+                className="interactive-button button-glow w-full sm:w-auto text-xs sm:text-sm"
               >
-                <Link to="/payments">Enroll your child</Link>
+                <Link to="/payments">Enroll Now</Link>
               </Button>
               <Button
                 asChild
                 size="sm"
-                variant="outline"
-                className="hover-scale border-primary/40 bg-background text-primary hover:bg-primary/5"
+                variant="parent"
+                className="interactive-button w-full sm:w-auto text-xs sm:text-sm"
               >
                 <Link to="/projects">View student projects</Link>
               </Button>
             </div>
 
-            <div className="grid gap-3 text-[11px] text-muted-foreground md:grid-cols-3">
-              <div className="rounded-2xl bg-card/80 p-4 shadow-sm">
-                <p className="text-xs font-semibold text-foreground">Project evidence, not just scores</p>
-                <p className="mt-1 leading-snug">
+            <div className="grid gap-3 text-[11px] text-slate-600 sm:gap-3 sm:text-xs sm:grid-cols-2 xl:grid-cols-3">
+              <div className="rounded-2xl border border-slate-200 bg-white/90 p-3 shadow-sm sm:p-4">
+                <p className="text-xs font-black text-slate-700 sm:text-sm">Project evidence, not just scores</p>
+                <p className="mt-1 leading-snug text-[10px] sm:text-xs">
                   Track every build, submission and presentation your child completes in the portal.
                 </p>
               </div>
-              <div className="rounded-2xl bg-card/80 p-4 shadow-sm">
-                <p className="text-xs font-semibold text-foreground">Built for Nigerian schools</p>
-                <p className="mt-1 leading-snug">Simple to deploy across classes without new hardware or complex setup.</p>
+              <div className="rounded-2xl border border-slate-200 bg-white/90 p-3 shadow-sm sm:p-4">
+                <p className="text-xs font-black text-slate-700 sm:text-sm">Built for Nigerian schools</p>
+                <p className="mt-1 leading-snug text-[10px] sm:text-xs">Simple to deploy across classes without new hardware or complex setup.</p>
               </div>
-              <div className="rounded-2xl bg-card/80 p-4 shadow-sm">
-                <p className="text-xs font-semibold text-foreground">Parent and school dashboards</p>
-                <p className="mt-1 leading-snug">One place where parents, teachers and students see the same progress.</p>
+              <div className="rounded-2xl border border-slate-200 bg-white/90 p-3 shadow-sm sm:p-4">
+                <p className="text-xs font-black text-slate-700 sm:text-sm">Parent and school dashboards</p>
+                <p className="mt-1 leading-snug text-[10px] sm:text-xs">One place where parents, teachers and students see the same progress.</p>
               </div>
             </div>
           </div>
 
           {/* Hero image grid */}
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             {heroImages.map((image, index) => (
               <div
                 key={image.alt}
@@ -165,6 +268,188 @@ const Index = () => {
           </div>
         </section>
 
+        <section className="mt-14 border-t border-dashed border-border/70 pt-8">
+          <div className="overflow-hidden rounded-[1.75rem] border border-sky-100 bg-gradient-to-br from-sky-100 via-white to-amber-50 p-4 shadow-[0_20px_60px_rgba(37,99,235,0.06)] sm:p-6 lg:p-8">
+            <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-primary">About The Program</p>
+                <h2 className="mt-2 text-2xl font-black leading-tight text-slate-700 sm:text-3xl">
+                  A practical technology bootcamp for future-ready learners.
+                </h2>
+                <p className="mt-4 max-w-3xl text-base font-medium leading-8 text-slate-500">
+                  The AI Summer Holiday Program is a hands-on learning experience designed to help children and teenagers grow confident with digital tools, creative thinking, and real-world technology.
+                </p>
+                <p className="mt-3 max-w-3xl text-base font-medium leading-8 text-slate-500">
+                  From Artificial Intelligence and web design to presentation skills and project building, each session is structured to help learners create something meaningful.
+                </p>
+              </div>
+              <div className="rounded-[1.25rem] border border-sky-100 bg-white/90 p-4 shadow-sm sm:p-5">
+                <p className="text-sm font-black text-slate-700">What makes it special</p>
+                <ul className="mt-3 space-y-3 text-sm font-medium text-slate-500">
+                  <li className="flex items-start gap-2"><span className="mt-2 h-2 w-2 rounded-full bg-primary" />Hands-on projects that feel real and exciting.</li>
+                  <li className="flex items-start gap-2"><span className="mt-2 h-2 w-2 rounded-full bg-secondary" />Mentorship that keeps learning practical and age-appropriate.</li>
+                  <li className="flex items-start gap-2"><span className="mt-2 h-2 w-2 rounded-full bg-primary" />A strong foundation for school, creativity, and future careers.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-14 border-t border-dashed border-border/70 pt-8" id="learn">
+          <div className="mb-6 max-w-3xl">
+            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-primary">What You&apos;ll Learn</p>
+            <h2 className="mt-2 text-2xl font-black leading-tight text-slate-700 sm:text-3xl">
+              A modern curriculum built for creativity, innovation, and real-world problem solving.
+            </h2>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {learningModules.map((module, index) => {
+              const Icon = module.icon;
+              return (
+                <Card key={module.title} className="group h-full border border-slate-200 bg-white shadow-[0_16px_45px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_22px_60px_rgba(37,99,235,0.14)]">
+                  <CardContent className="flex h-full flex-col gap-3 p-4 sm:p-5">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-secondary text-white shadow-md transition-transform duration-300 group-hover:scale-110">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black leading-6 text-slate-700">{module.title}</h3>
+                      <ul className="mt-2 space-y-1 text-[12px] font-medium leading-6 text-slate-500">
+                        {module.description.map((item) => (
+                          <li key={item} className="flex items-start gap-2">
+                            <span className="mt-1 h-1.5 w-1.5 rounded-full bg-primary" />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="mt-14 border-t border-dashed border-border/70 pt-8">
+          <div className="rounded-[1.75rem] border border-sky-100 bg-gradient-to-br from-sky-100 via-white to-amber-50 p-4 text-slate-700 shadow-[0_20px_60px_rgba(37,99,235,0.06)] sm:p-6 lg:p-8">
+            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-primary">Who Can Join?</p>
+            <h2 className="mt-2 text-2xl font-black leading-tight text-slate-700 sm:text-3xl">
+              A welcoming program for curious learners at every stage.
+            </h2>
+            <div className="mt-6 grid gap-6 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
+              <div className="rounded-[1.25rem] bg-white/95 p-4 text-slate-700 shadow-sm sm:p-5">
+                <p className="text-sm font-black text-slate-700">Age Range: 8 – 21 Years</p>
+                <p className="mt-3 text-sm font-semibold text-slate-500">Suitable for:</p>
+                <ul className="mt-3 grid gap-2 text-sm font-medium text-slate-500 sm:grid-cols-2">
+                  <li className="rounded-2xl bg-slate-100 p-3">Primary School Students</li>
+                  <li className="rounded-2xl bg-slate-100 p-3">Secondary School Students</li>
+                  <li className="rounded-2xl bg-slate-100 p-3">Undergraduate Students</li>
+                  <li className="rounded-2xl bg-slate-100 p-3">Young Innovators</li>
+                  <li className="rounded-2xl bg-slate-100 p-3">Young Creators</li>
+                  <li className="rounded-2xl bg-slate-100 p-3">Aspiring Tech Enthusiasts</li>
+                </ul>
+              </div>
+              <div className="rounded-[1.25rem] border border-sky-100 bg-white/90 p-4 text-sm font-medium leading-8 text-slate-600 shadow-sm sm:p-5">
+                <p className="text-base font-black text-slate-700">Whether your child is exploring technology for the first time or already building ideas, this bootcamp creates a strong foundation for innovation, collaboration, and digital confidence.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-14 border-t border-dashed border-border/70 pt-8">
+          <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+            <div className="rounded-[1.5rem] border border-sky-100 bg-white p-4 shadow-[0_20px_60px_rgba(15,23,42,0.04)] sm:p-6">
+              <p className="text-[11px] font-black uppercase tracking-[0.24em] text-primary">Venue &amp; Schedule</p>
+              <h2 className="mt-2 text-2xl font-black leading-tight text-slate-700">
+                A structured program with practical sessions and mentorship.
+              </h2>
+              <div className="mt-5 space-y-4 text-sm font-medium text-slate-500">
+                <div className="rounded-2xl bg-slate-50 p-4">
+                  <p className="text-sm font-black text-slate-700">Venue</p>
+                  <p className="mt-2 leading-7">No. 6 Magma Plaza, Nkwo Nike, Amoji, Abakpa, Enugu East, Enugu State, Nigeria</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-4">
+                  <p className="text-sm font-black text-slate-700">Program Duration</p>
+                  <p className="mt-2">August 4th – September 5th</p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-4">
+                  <p className="text-sm font-black text-slate-700">Training Format</p>
+                  <ul className="mt-2 space-y-2">
+                    <li>• Physical Classes</li>
+                    <li>• Practical Workshops</li>
+                    <li>• Real Project Development</li>
+                    <li>• Mentorship Sessions</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-[1.5rem] border border-sky-100 bg-gradient-to-br from-sky-100 via-white to-amber-50 p-4 text-slate-700 shadow-[0_20px_60px_rgba(37,99,235,0.06)] sm:p-6">
+              <p className="text-[11px] font-black uppercase tracking-[0.24em] text-primary">Why Join This Program?</p>
+              <h2 className="mt-2 text-2xl font-black leading-tight text-slate-700">Build confidence, creativity, and real digital skills.</h2>
+              <ul className="mt-5 grid gap-2 text-sm font-semibold text-slate-600 sm:grid-cols-2">
+                <li className="rounded-2xl bg-white/90 p-3 shadow-sm">Learn practical AI skills</li>
+                <li className="rounded-2xl bg-white/90 p-3 shadow-sm">Build real projects</li>
+                <li className="rounded-2xl bg-white/90 p-3 shadow-sm">Improve digital creativity</li>
+                <li className="rounded-2xl bg-white/90 p-3 shadow-sm">Strengthen academic research skills</li>
+                <li className="rounded-2xl bg-white/90 p-3 shadow-sm">Gain technology exposure early</li>
+                <li className="rounded-2xl bg-white/90 p-3 shadow-sm">Develop problem-solving abilities</li>
+                <li className="rounded-2xl bg-white/90 p-3 shadow-sm">Create a professional portfolio</li>
+                <li className="rounded-2xl bg-white/90 p-3 shadow-sm">Receive mentorship and guidance</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-14 border-t border-dashed border-border/70 pt-8">
+          <div className="mb-6 max-w-2xl">
+            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-primary">Contact Us</p>
+            <h2 className="mt-2 text-2xl font-black leading-tight text-slate-700">Reach the program team easily.</h2>
+          </div>
+          <div className="rounded-[1.5rem] border border-sky-100 bg-gradient-to-br from-white via-sky-50 to-amber-50 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.04)] sm:p-6">
+            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-sm font-black text-slate-700">Phone Numbers</p>
+                <div className="mt-3 space-y-2 text-sm font-semibold text-slate-500">
+                  <a href="tel:+2348125650249" className="flex items-center gap-2 hover:text-primary">
+                    <span className="text-primary">📞</span>
+                    <span>08125650249</span>
+                  </a>
+                  <a href="tel:+2348130984004" className="flex items-center gap-2 hover:text-primary">
+                    <span className="text-primary">📞</span>
+                    <span>08130984004</span>
+                  </a>
+                  <a href="tel:+2349030892635" className="flex items-center gap-2 hover:text-primary">
+                    <span className="text-primary">📞</span>
+                    <span>09030892635</span>
+                  </a>
+                </div>
+              </div>
+              <div className="rounded-[1.25rem] bg-white/90 p-4 text-sm font-medium leading-7 text-slate-500 shadow-sm">
+                <p className="font-black text-slate-700">Enroll Now</p>
+                <p className="mt-2">Reserve your place in the AI Summer Holiday Program by paying through the secure enrollment flow.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="enrollment" className="mt-14 border-t border-dashed border-border/70 pt-8">
+          <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_20px_60px_rgba(15,23,42,0.06)] sm:p-6">
+            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-primary">Enrollment</p>
+            <h2 className="mt-2 text-2xl font-black leading-tight text-slate-700">Securely reserve your child&apos;s place.</h2>
+            <p className="mt-3 max-w-2xl text-base font-medium leading-8 text-slate-600">
+              The existing payment process remains active, and the official enroll button now connects directly to the secure enrollment flow.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Button asChild size="sm" variant="playful" className="interactive-button button-glow">
+                <Link to="/payments">Start Enrollment</Link>
+              </Button>
+              <Button asChild size="sm" variant="outline" className="interactive-button">
+                <Link to="/projects">Browse student projects</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+
         {/* PROOF OVER PROMISES */}
         <section className="mt-14 border-t border-dashed border-border/70 pt-8">
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)] lg:items-start">
@@ -180,7 +465,7 @@ const Index = () => {
                     the AI Innovators Program. No templates. No fake screenshots.
                   </p>
                 </div>
-                <Button asChild size="sm" variant="outline" className="text-xs">
+                <Button asChild size="sm" variant="teen" className="interactive-button">
                   <Link to="/projects">See more projects</Link>
                 </Button>
               </div>

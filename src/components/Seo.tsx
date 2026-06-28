@@ -7,14 +7,16 @@ interface SeoProps {
   title: string;
   description: string;
   canonical?: string;
+  keywords?: string;
 }
 
-export const Seo: React.FC<SeoProps> = ({ title, description, canonical }) => {
+export const Seo: React.FC<SeoProps> = ({ title, description, canonical, keywords }) => {
   const fullTitle = `${title} | AI Innovators Portal`;
   return (
     <Helmet>
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
+      {keywords && <meta name="keywords" content={keywords} />}
       {canonical && <link rel="canonical" href={canonical} />}
     </Helmet>
   );

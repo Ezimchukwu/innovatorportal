@@ -216,10 +216,10 @@ export const StudentDashboardPage = () => {
         <div className="mb-4 flex items-center justify-between gap-3">
           <Button
             type="button"
-            variant="outline"
+            variant="parent"
             size="sm"
             onClick={() => navigate("/")}
-            className="text-xs"
+            className="interactive-button"
           >
             ← Back
           </Button>
@@ -416,8 +416,9 @@ export const StudentDashboardPage = () => {
                     <Button
                       type="submit"
                       size="sm"
+                      variant="teen"
                       disabled={creating}
-                      className="hover-scale bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[var(--shadow-soft)]"
+                      className="interactive-button"
                     >
                       {creating ? "Saving project..." : "Save project"}
                     </Button>

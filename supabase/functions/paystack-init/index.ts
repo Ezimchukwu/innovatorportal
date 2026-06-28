@@ -42,39 +42,36 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Missing or invalid authorization header" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
-
-    const accessToken = authHeader.replace("Bearer", "").trim();
+    const accessToken = authHeader.startsWith("Bearer ") ? authHeader.replace("Bearer", "").trim() : "";
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+        headers: accessToken
+          ? {
+              Authorization: `Bearer ${accessToken}`,
+            }
+          : undefined,
       },
     });
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
+    let userId: string | undefined;
+    if (accessToken) {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-    if (userError || !user) {
-      console.error("paystack-init: unauthenticated access", userError);
-      return new Response(JSON.stringify({ error: "You must be signed in to start a payment." }), {
-        status: 401,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      if (userError) {
+        console.error("paystack-init: unable to resolve signed-in user", userError);
+      } else if (user) {
+        userId = user.id;
+      }
     }
 
     const body = await req.json();
     const email = String(body.email ?? "").trim();
     const amount = Number(body.amount ?? 0); // amount in kobo
+    const metadata = body.metadata ?? {};
 
     if (!email || !email.includes("@") || !amount || amount <= 0) {
       return new Response(JSON.stringify({ error: "Invalid email or amount" }), {
@@ -98,7 +95,12 @@ serve(async (req) => {
         metadata: {
           source: "ai-innovators-portal",
           purpose: "child_enrollment",
-          user_id: user.id,
+          user_id: userId ?? null,
+          child_name: metadata.child_name ?? "",
+          child_age: metadata.child_age ?? "",
+          child_class: metadata.child_class ?? "",
+          parent_email: email,
+          guest_checkout: !userId,
         },
       }),
     });

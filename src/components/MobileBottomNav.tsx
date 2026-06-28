@@ -19,8 +19,8 @@ export const MobileBottomNav = () => {
         <Link
           to="/"
           className={cn(
-            "flex flex-1 flex-col items-center gap-1 hover-scale",
-            "rounded-full px-2 py-1 transition-colors",
+            "flex flex-1 flex-col items-center gap-1 hover-scale interactive-button transition-all duration-300",
+            "rounded-full px-2 py-1",
             isActive("/") && "bg-secondary/90 text-secondary-foreground shadow-[var(--shadow-soft)]"
           )}
         >
@@ -31,8 +31,8 @@ export const MobileBottomNav = () => {
         <Link
           to={user ? dashboardPath : "/auth"}
           className={cn(
-            "flex flex-1 flex-col items-center gap-1 hover-scale",
-            "rounded-full px-2 py-1 transition-colors",
+            "flex flex-1 flex-col items-center gap-1 hover-scale interactive-button transition-all duration-300",
+            "rounded-full px-2 py-1",
             isActive(dashboardPath) && "bg-secondary/90 text-secondary-foreground shadow-[var(--shadow-soft)]"
           )}
         >
@@ -43,8 +43,8 @@ export const MobileBottomNav = () => {
         <Link
           to="/projects"
           className={cn(
-            "flex flex-1 flex-col items-center gap-1 hover-scale",
-            "rounded-full px-2 py-1 transition-colors",
+            "flex flex-1 flex-col items-center gap-1 hover-scale interactive-button transition-all duration-300",
+            "rounded-full px-2 py-1",
             isActive("/projects") && "bg-secondary/90 text-secondary-foreground shadow-[var(--shadow-soft)]"
           )}
         >

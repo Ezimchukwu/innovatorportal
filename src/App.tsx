@@ -19,6 +19,7 @@ import PaymentSuccessPage from "@/pages/PaymentSuccessPage";
 import { SuperAdminGuard } from "@/components/SuperAdminGuard";
 import { AdminLoginPage } from "@/pages/admin/AdminLoginPage";
 import UnauthorizedPage from "@/pages/UnauthorizedPage";
+import { FloatingWhatsAppButton } from "@/components/FloatingWhatsAppButton";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
 
+            <FloatingWhatsAppButton />
             {/* Mobile bottom navigation for quick access */}
             <MobileBottomNav />
           </div>
