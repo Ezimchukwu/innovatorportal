@@ -7,7 +7,6 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { PublicGalleryPage } from "./pages/PublicGalleryPage";
 import { StudentDashboardPage } from "./pages/dashboards/StudentDashboardPage";
-import { ParentDashboardPage } from "./pages/dashboards/ParentDashboardPage";
 import { SchoolDashboardPage } from "./pages/dashboards/SchoolDashboardPage";
 import { AdminDashboardPage } from "./pages/dashboards/AdminDashboardPage";
 import { AuthProvider } from "@/hooks/useAuth";
@@ -20,6 +19,7 @@ import { SuperAdminGuard } from "@/components/SuperAdminGuard";
 import { AdminLoginPage } from "@/pages/admin/AdminLoginPage";
 import UnauthorizedPage from "@/pages/UnauthorizedPage";
 import { FloatingWhatsAppButton } from "@/components/FloatingWhatsAppButton";
+import PendingAccessPage from "@/pages/PendingAccessPage";
 
 const queryClient = new QueryClient();
 
@@ -37,12 +37,10 @@ const App = () => (
               <Route path="/projects" element={<PublicGalleryPage />} />
               <Route path="/payments" element={<PaymentsPage />} />
               <Route path="/payments/success" element={<PaymentSuccessPage />} />
+              <Route path="/access-pending" element={<PendingAccessPage />} />
 
               <Route element={<ProtectedRoute requireRole="student" />}>
                 <Route path="/student" element={<StudentDashboardPage />} />
-              </Route>
-              <Route element={<ProtectedRoute requireRole="parent" />}>
-                <Route path="/parent" element={<ParentDashboardPage />} />
               </Route>
               <Route element={<ProtectedRoute requireRole="school" />}>
                 <Route path="/school" element={<SchoolDashboardPage />} />

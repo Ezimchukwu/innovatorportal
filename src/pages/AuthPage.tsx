@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRoles, type AppRole } from "@/hooks/useUserRoles";
-import { getPrimaryDashboardPath } from "@/lib/roleRouting";
+import { getPrimaryDashboardPath, setPreferredDashboardRole } from "@/lib/roleRouting";
 
 const authSchema = z.object({
   email: z.string().trim().email({ message: "Enter a valid email address" }).max(255),
@@ -24,7 +24,7 @@ type AuthFormValues = z.infer<typeof authSchema>;
 
 const ADMIN_EMAIL = "divinetonyezimchukwu@gmail.com";
 
-type SelectableRole = Extract<AppRole, "student" | "parent" | "school">;
+type SelectableRole = Extract<AppRole, "student" | "school">;
 
 export const AuthPage = () => {
   const [mode, setMode] = useState<"login" | "signup" | "forgot" | "reset">("login");
@@ -260,31 +260,29 @@ export const AuthPage = () => {
           }
         }
 
+        setPreferredDashboardRole(selectedRole ?? "student");
+
         toast({
           title: "Welcome back",
           description: "You are now signed in.",
         });
 
-        // Immediately send the user to the dashboard for the role they chose
         const explicitTarget =
           redirectTo && redirectTo !== "/auth"
             ? redirectTo
             : selectedRole === "student"
               ? "/student"
-              : selectedRole === "parent"
-                ? "/parent"
-                : selectedRole === "school"
-                  ? "/school"
-                  : "/";
+              : selectedRole === "school"
+                ? "/school"
+                : "/access-pending";
 
         navigate(explicitTarget, { replace: true });
       } else {
-        const redirectUrl = `${window.location.origin}/`;
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email: values.email,
           password: values.password,
           options: {
-            emailRedirectTo: redirectUrl,
+            emailRedirectTo: `${window.location.origin}/access-pending`,
           },
         });
 
@@ -297,10 +295,24 @@ export const AuthPage = () => {
           return;
         }
 
-        toast({
-          title: "Check your email",
-          description: "We sent you a confirmation link to complete your signup.",
-        });
+        if (data.user && !data.session) {
+          toast({
+            title: "Account created",
+            description: "You can now sign in and wait for admin approval to access your dashboard.",
+          });
+          setMode("login");
+          setValues({ email: "", password: "" });
+          return;
+        }
+
+        if (data.session?.user) {
+          setPreferredDashboardRole("student");
+          toast({
+            title: "Account created",
+            description: "You are signed in and your account is ready for admin review.",
+          });
+          navigate("/access-pending", { replace: true });
+        }
       }
     } finally {
       setLoading(false);
@@ -316,13 +328,8 @@ export const AuthPage = () => {
     const roles: { value: SelectableRole; label: string; description: string }[] = [
       {
         value: "student",
-        label: "Student",
-        description: "I am a learner building and submitting projects.",
-      },
-      {
-        value: "parent",
-        label: "Parent / Guardian",
-        description: "I want to track my child’s progress and certificates.",
+        label: "Student / Learner",
+        description: "I am signing in to build, submit, and track my projects.",
       },
       {
         value: "school",

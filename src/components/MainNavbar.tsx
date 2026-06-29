@@ -70,7 +70,7 @@ export const MainNavbar = () => {
             size="sm"
             className="hover-scale bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[var(--shadow-soft)]"
           >
-            <Link to="/auth" onClick={onClick}>
+            <Link to="/payments" onClick={onClick}>
               Enroll a Child
             </Link>
           </Button>

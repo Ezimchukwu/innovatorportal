@@ -28,6 +28,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ requireRole }) =
     return <Navigate to={`/auth?redirectTo=${redirectTo}`} replace />;
   }
 
+  if (requireRole && roles.length === 0) {
+    return <Navigate to="/access-pending" replace />;
+  }
+
   if (
     requireRole &&
     !(

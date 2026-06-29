@@ -202,7 +202,7 @@ export const PaymentSuccessPage = () => {
                   className="w-full hover-scale bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-[var(--shadow-soft)] sm:w-auto"
                   asChild
                 >
-                  <Link to="/parent">Go to Parent Dashboard</Link>
+                  <Link to="/access-pending">Go to dashboard</Link>
                 </Button>
                 <Button
                   size="sm"
