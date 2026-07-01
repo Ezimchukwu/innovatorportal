@@ -38,20 +38,24 @@ export const PaymentSuccessPage = () => {
       }
 
       try {
-        const { data, error: verifyError } = await supabase.functions.invoke<VerifyResult>(
-          "paystack-verify",
-          {
-            body: { reference },
+        // Call the new Vercel API endpoint instead of Supabase Edge Function
+        const res = await fetch('/api/paystack/verify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-        );
+          body: JSON.stringify({ reference }),
+        });
 
-        if (verifyError) {
-          console.error(verifyError);
+        if (!res.ok) {
+          console.error("Payment verification failed with status", res.status);
           setError("We could not verify this payment. Please contact support.");
           return;
         }
 
-        if (!data) {
+        const data: VerifyResult = await res.json();
+
+        if (!data || !data.reference) {
           setError("No payment details were returned.");
           return;
         }

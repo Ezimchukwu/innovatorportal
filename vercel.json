@@ -1,0 +1,25 @@
+{
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "env": {
+    "PAYSTACK_SECRET_KEY": "@paystack_secret_key",
+    "VERCEL_ENV": "production"
+  },
+  "functions": {
+    "api/paystack/initialize.ts": {
+      "memory": 1024,
+      "maxDuration": 30
+    },
+    "api/paystack/verify.ts": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
+    }
+  ]
+}

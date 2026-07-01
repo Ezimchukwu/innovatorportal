@@ -68,11 +68,8 @@ export const PaymentsPage = () => {
         "Content-Type": "application/json",
       };
 
-      if (session?.access_token) {
-        headers.Authorization = `Bearer ${session.access_token}`;
-      }
-
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paystack-init`, {
+      // Call the new Vercel API endpoint instead of Supabase Edge Function
+      const res = await fetch(`/api/paystack/initialize`, {
         method: "POST",
         headers,
         body: JSON.stringify({
