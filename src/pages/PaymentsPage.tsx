@@ -17,6 +17,7 @@ export const PaymentsPage = () => {
   const [childAge, setChildAge] = useState("");
   const [childClass, setChildClass] = useState("");
   const [loading, setLoading] = useState(false);
+  const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
   useEffect(() => {
     if (user?.email) {
@@ -68,8 +69,19 @@ export const PaymentsPage = () => {
         "Content-Type": "application/json",
       };
 
-      // Call the new Vercel API endpoint instead of Supabase Edge Function
-      const res = await fetch(`/api/paystack/initialize`, {
+      // Call the API endpoint (use VITE_API_BASE_URL when set — useful for Truehost)
+      let url: string;
+      if (API_BASE) {
+        try {
+          url = new URL("/api/paystack/initialize", API_BASE).toString();
+        } catch (e) {
+          url = `${API_BASE.replace(/\/$/, "")}/api/paystack/initialize`;
+        }
+      } else {
+        url = "/api/paystack/initialize";
+      }
+
+      const res = await fetch(url, {
         method: "POST",
         headers,
         body: JSON.stringify({
@@ -85,11 +97,37 @@ export const PaymentsPage = () => {
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok || !data.authorization_url) {
+      // Guard: some hosts may return HTML (404/index) — check content-type first
+      const contentType = res.headers.get("content-type") || "";
+      if (!res.ok) {
+        const bodyText = await res.text();
+        console.error("Payment init failed:", res.status, bodyText);
         toast({
           title: "Could not start payment",
-          description: data.error ?? "Please try again in a moment.",
+          description: bodyText || "Please try again in a moment.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      let data: any;
+      if (contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        const body = await res.text();
+        console.error("Expected JSON but received:", body);
+        toast({
+          title: "Unexpected response",
+          description: "Payment service returned an unexpected response. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!data || !data.authorization_url) {
+        toast({
+          title: "Could not start payment",
+          description: data?.error ?? "Please try again in a moment.",
           variant: "destructive",
         });
         return;

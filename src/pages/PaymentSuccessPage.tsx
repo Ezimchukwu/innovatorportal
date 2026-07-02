@@ -110,6 +110,21 @@ export const PaymentSuccessPage = () => {
   }, [reference, user]);
 
   const isSuccess = verifyResult?.status === "success";
+  const whatsappNumber = "2348125650249";
+  const whatsappMessage = "Hello, I have Made my Just Now! Please Confirm & Notify me";
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+
+  useEffect(() => {
+    if (!isSuccess) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      window.location.href = whatsappUrl;
+    }, 1200);
+
+    return () => window.clearTimeout(timer);
+  }, [isSuccess, whatsappUrl]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
